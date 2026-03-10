@@ -1,4 +1,6 @@
-Prefix,Base_URI,Source_Name
+﻿Prefix,Base_URI,Source_Name
 SNOMED,http://snomed.info/id/,SNOMED CT
 HL7v3,http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation,HL7 v3 Religious Affiliation
 HL7v2,http://terminology.hl7.org/CodeSystem/v2-0006,HL7 v2 Table 0006
+LCDGT,http://id.loc.gov/authorities/demographicTerms/,LC Demographic Group Terms
+ELSST,https://elsst.cessda.eu/id/6/,European Language Social Science Thesaurus
