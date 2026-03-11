@@ -1,0 +1,7 @@
+﻿Prefix,Source_Name,Base_URI,License,Version,Home_URL
+LOINC,Logical Observation Identifiers Names and Codes,https://loinc.org/,PENDING_MANUAL_REVIEW,,
+ELSST,European Language Social Science Thesaurus,https://elsst.cessda.eu/id/6/,PENDING_MANUAL_REVIEW,,
+HL7v3,HL7 v3,http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation,PENDING_MANUAL_REVIEW,,
+HL7v2,HL7 v2,http://terminology.hl7.org/CodeSystem/v2-0006,PENDING_MANUAL_REVIEW,,
+LCDGT,LC Demographic Group Terms,http://id.loc.gov/authorities/demographicTerms/,PENDING_MANUAL_REVIEW,,
+SNOMED,SNOMED CT,http://snomed.info/id/,PENDING_MANUAL_REVIEW,,

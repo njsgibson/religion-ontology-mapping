@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": ["./config"],
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.terminal.useEnvFile": true
+}
