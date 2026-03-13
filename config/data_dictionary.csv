@@ -12,4 +12,5 @@ Concept_ID,String,,The raw local alphanumeric identifier assigned by the source 
 URI,String (URL),,The globally unique resolvable Uniform Resource Identifier. Used as primary key for deduplication.,http://snomed.info/id/105390002
 Has_Translation,String,yes | [blank],Boolean flag indicating if the source API contains non-English designations.,yes
 Status,String,,The current lifecycle state of the concept within the source system.,active | deprecated | retired
+Crosswalks,String,,"Pre-existing mapping links to other ontologies (e.g., skos:exactMatch, owl:sameAs, or text-based mapping notes). Separated by a pipe (' | ').","http://vocab.getty.edu/aat/300073711 | LC: identical"
 Extraction_Date,Datetime String,,Local system timestamp when the Python ingestion script generated the row (YYYY-MM-DD HH:MM:SS).,2026-03-11 14:30:00

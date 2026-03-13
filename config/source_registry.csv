@@ -1,7 +1,10 @@
-﻿Prefix,Source_Name,Base_URI,License,Version,Home_URL
-LOINC,Logical Observation Identifiers Names and Codes,https://loinc.org/,PENDING_MANUAL_REVIEW,,
-ELSST,European Language Social Science Thesaurus,https://elsst.cessda.eu/id/6/,PENDING_MANUAL_REVIEW,,
-HL7v3,HL7 v3,http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation,PENDING_MANUAL_REVIEW,,
-HL7v2,HL7 v2,http://terminology.hl7.org/CodeSystem/v2-0006,PENDING_MANUAL_REVIEW,,
-LCDGT,LC Demographic Group Terms,http://id.loc.gov/authorities/demographicTerms/,PENDING_MANUAL_REVIEW,,
-SNOMED,SNOMED CT,http://snomed.info/id/,PENDING_MANUAL_REVIEW,,
+﻿Prefix,Source_Name,Base_URI,License,Version,Home_URL,Ingest_Strategy
+LOINC,Logical Observation Identifiers Names and Codes,https://loinc.org/,LOINC License (Free/Registration Required),2.79,https://loinc.org/,FHIR API text-search & seed expansion; flattens hierarchy to 2-level Component > Label; dynamic FSN reconstruction
+ELSST,European Language Social Science Thesaurus,https://elsst.cessda.eu/id/6/,CC BY 4.0,3.3,https://elsst.cessda.eu/,Recursive REST API crawl from verified top-level URIs; resolves multi-lingual arrays to English.
+HL7v3,HL7 v3,http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation,ODC-BY 1.0 (Open Data Commons),,https://www.getty.edu/research/tools/vocabularies/aat/,Bulk JSON download; recursive in-memory parsing of nested 'concept' arrays.
+HL7v2,HL7 v2,http://terminology.hl7.org/CodeSystem/v2-0006,PENDING_MANUAL_REVIEW,,,Bulk JSON download; recursive in-memory parsing of nested 'concept' arrays.
+LCDGT,LC Demographic Group Terms,http://id.loc.gov/authorities/demographicTerms/,PENDING_MANUAL_REVIEW,,,Discovery via pre-built collection search; iterative JSON crawl (flat polyhierarchy handling applied)
+SNOMED,SNOMED CT,http://snomed.info/id/,PENDING_MANUAL_REVIEW,,,Bulk discovery via ECL queries (ValueSet/$expand); iterative browser API crawl for definitions and recursive ancestry
+LCSH,Library of Congress Subject Headings,http://id.loc.gov/authorities/subjects/,PENDING_MANUAL_REVIEW,,,Recursive JSON API crawl (Max Depth 7 to prevent semantic drift)
+AAT,Getty Art & Architecture Thesaurus,http://vocab.getty.edu/aat/,PENDING_MANUAL_REVIEW,,,SPARQL loop-per-seed (Preferred parent path only; multi-parent IDs)
+TGM,Thesaurus for Graphic Materials,http://id.loc.gov/vocabulary/graphicMaterials/,PENDING_MANUAL_REVIEW,,,Targeted depth-limited crawl (Inherently taxonomic)

@@ -4,22 +4,22 @@ import pandas as pd
 import datetime
 import os
 
-# --- 1. The Master Schema ---
-# If you ever add a 15th column, you only add it here.
+# --- 1. Standard Schema ---
 COLUMN_ORDER = [
     "Source_System", 
     "Primary_Label", 
     "CURIE", 
     "Formal_Label", 
-    "Concept_Type",       # NEW: E.g., "Survey Question", "Observation", "Class"
+    "Concept_Type",
     "Hierarchy_Path", 
     "Synonyms", 
     "Description", 
     "Parent_IDs", 
     "Concept_ID", 
     "URI", 
-    "Has_Translation",    # NEW: 'yes' if non-English translations exist, else ''
+    "Has_Translation",
     "Status", 
+    "Crosswalks",       # NEW: Pre-existing mappings to other ontologies (e.g., exactMatch)
     "Extraction_Date"
 ]
 
@@ -42,7 +42,7 @@ def finalize_row(row_data):
     for key, value in row_data.items():
         if key in final_row:
             # Clean up potential None values to keep the CSV clean
-            final_row[key] = str(value) if value is not None else ""
+            final_row[key] = str(value).strip() if value is not None else ""
             
     # Always auto-stamp the extraction date
     final_row['Extraction_Date'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
