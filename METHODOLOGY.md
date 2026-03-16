@@ -1,10 +1,11 @@
-# Methodology: Source Discovery and Ingestion
-
-This document outlines the methodology for identifying, evaluating, and ingesting external data sources into the Religion Ontology Mapping Framework. 
-
+# Methodology
 *Note: This document currently covers Phase 1 of the project (Ingestion). Methods for subsequent phases will be appended as the project evolves.*
 
-## 1. Source Qualification
+## Source Discovery and Ingestion
+
+This section outlines the methodology for identifying, evaluating, and ingesting external data sources into the Religion Ontology Mapping Framework. 
+
+### 1. Source Qualification
 A candidate source must pass baseline scope checks to ensure that it fits the domain model (i.e., is relevant to the target religion-related concepts).
 
 1. **Includes religion-related content:**
@@ -15,7 +16,7 @@ A candidate source must pass baseline scope checks to ensure that it fits the do
 * Does the source include general religion-related concepts (e.g., "cathedral", "bishop", "prayer") or is it limited to specific real-world instances (e.g., "Washington National Cathedral", "Desmond Tutu", "The Lord's Prayer")? 
 * If the source primarily catalogs instances (e.g., Getty ULAN, TGN, CONA), exclude it. This project is scoped to conceptual structures and roles, not specific artifacts or geographic records.
 
-## 2. Source Prioritization
+### 2. Source Prioritization
 Not all relevant sources offer the same utility. To advance our goals of cross-disciplinary interoperability and FAIR standard adoption for data on religion, we prioritize sources based on the following criteria:
 
 3. **Prioritization considerations:**
@@ -24,7 +25,7 @@ Not all relevant sources offer the same utility. To advance our goals of cross-d
 * **structural depth:** Does the source provide rich relational data (hierarchical, synonymous, associative) or is it a flat list? Understanding *how* terms are organized in relation to each other may offer higher analytic value.
 * **strategic advocacy:** Is the source a widely used proprietary or non-standard schema (e.g., ATLA, World Religion Database)? Pulling these into a standardized schema helps demonstrate the value of openness and could encourages steward toward FAIR compliance.
 
-## 3. Scoping and Locating Relevant Concepts
+### 3. Scoping and Locating Relevant Concepts
 Once a source is prioritized, we determine how to locate the relevant data within it.
 
 4. **Determine domain focus:**
@@ -45,7 +46,7 @@ Once a source is prioritized, we determine how to locate the relevant data withi
   * **g.** Religious communities (e.g., *congregation, prayer group, diocese*).
   * **h.** Religion-related material concepts (e.g., *religious articles, texts, relics*).
 
-## 4. Extraction Strategy
+### 4. Extraction Strategy
 After locating relevant concepts, the source's architecture must be assessed to determine the appropriate ingestion script logic to successfully map the data into the project's standard schema for ingestion data.
 
 7. **Assess structural architecture:**
@@ -56,37 +57,126 @@ After locating relevant concepts, the source's architecture must be assessed to 
 8. **Define traversal rules:**
 * **for trees:** Hardcode the seed nodes and recursively crawl all descendants.
 * **for associative graphs:** Hardcode the seeds and crawl descendants, but review results and as necessary impose a strict depth limit (e.g., 7) to prevent semantic drift into irrelevant sub-topics (e.g., general history or finance). As necessary, apply different depth limits to different seeds.
-* **for flat catalogs:** Use tracer terms in an API search loop. Populate the *Hierarchy_Path* faithfully: if the source uses native grouping attributes (e.g., categories or axes), use those to formulate a path. If the source is entirely flat, do not invent a hierarchy; the path should simply be the concept's label.
+* **for flat catalogs:** Use tracer terms in an API search loop. Populate the `Hierarchy_Path` faithfully: if the source uses native grouping attributes (e.g., categories or axes), use those to formulate a path. If the source is entirely flat, do not invent a hierarchy; the path should simply be the concept's label.
 
-9. **Determine API interaction approach:**
-* Can the required data be retrieved via a single bulk download (e.g., flat JSON) or does it require an iterative, node-by-node crawl via REST, FHIR, or SPARQL endpoints?
-* What identifying headers or authentication tokens are needed?
-* What rate limits or other piloteness considerations should be respected?
-* What caching strategy makes sense? For iterative API crawls, a persistent cache may be sensible so that if a long-running extraction fails mid-process, the script can resume from the last saved concept rather than starting over.
+9. **Determine ingestion modality and API interaction approach:**
+* Can the required data be retrieved via a single bulk download (e.g., N-Triples, flat JSON) or does it require an iterative, node-by-node crawl via REST, FHIR, or SPARQL endpoints? To accommodate diverse architectures and strict rate limits, use one of two primary strategies:
+  * **Strategy A: Local Bulk Parsing (Primary/Preferred):** For vocabularies offering complete data dumps (e.g., AFSET, AAT, SNOMED), bypass REST APIs entirely to ensure high-speed extraction and avoid institutional server rate-limits. Download the complete ontology (preferring SKOS/RDF N-Triples `.nt` format for memory efficiency) and store it in `data/external/`. Python scripts use `rdflib` to load the local graph into RAM, enabling rapid, network-independent recursive mapping.
+  * **Strategy B: Live API Crawling (Fallback/Targeted):** Use exclusively when bulk downloads are unavailable, or when targeting a highly specific subset of a massive ontology (e.g., LCSH Demographic Groups).
+    * *SPARQL Exception:* For endpoints like MeSH that offer SPARQL but restrict query execution time, avoid complex graph-traversal queries. Instead, write atomic, single-purpose queries (e.g., "get children of X") and manage the traversal queue locally in Python.
+* What identifying headers or authentication tokens are needed? (e.g., LOINC requires registered credentials; LOC requires an identified User-Agent).
+* What rate limits or other politeness considerations should be respected? For Strategy B, all REST scripts must strictly enforce HTTP Keep-Alive sessions (`requests.Session()`), 3-try retry loops, and exponential backoff protocols.
+* What caching strategy makes sense? For iterative API crawls, a persistent cache may be sensible so that if a long-running extraction fails mid-process, the script can resume from the last saved concept rather than starting over. Furthermore, any URI that fails after maximum retries must be explicitly logged to a failure queue for targeted re-ingestion.
+* **Note on Ancestry Construction:** Scripts must dynamically construct the `Hierarchy_Path` by traversing *upward* from the node to the absolute root of the ontology, ensuring that the breadcrumb trail is complete regardless of the seed from which the crawl originated.
 
-## 5. Validate comprehensiveness of seed concepts
+
+### 5. Validate comprehensiveness of seed concepts
 We can make use of information in the source ontology about associative relationships among concepts to ensure that all relevant concepts are being extracted.
 
 10. **Extract related concepts:**
-* Use a supplementary discovery routine or script to harvest all "related" or "see also" URIs (e.g., *skos:related*) attached to the concepts captured during the initial extraction.
+* Use a supplementary discovery routine or script to harvest all "related" or "see also" URIs (e.g., `skos:related`) attached to the concepts captured during the initial extraction.
 
 11. **Deduplicate against captured data:**
 * Filter this newly harvested list of related URIs against the set of concepts already captured in the primary ingest. This isolates adjacent concepts that were not captured by the initial seed concepts.
+* To manage iterative discovery without generating duplicate review work, scripts should employ a stateful "Inbox" approach. Newly discovered candidates are appended to an ephemeral candidates CSV file and tagged with an incrementing `Discovery_Pass` integer. 
+* During subsequent runs, the script must read this candidates file to build a "Do Not Suggest" list. If a human reviewer rejected a candidate on Pass 1 (by leaving it in the CSV rather than adding it to the ingestion seeds), the script will automatically ignore it on Pass 2.
 
 12. **Review concepts against semantic scope and iterate extraction seeds:**
-* Do any uncaptured related concepts fall within the project's semantic boundaries? If so, identify the highest relevant broader parent nodes and add these as new seeds to the ingestion script for this source. 
+* Do any uncaptured related concepts fall within the project's semantic boundaries? If so, identify the highest relevant broader parent nodes and add these as new seeds to the ingestion script for this source.
 
-## 6. Data Alignment and QA
+### 6. Data Alignment and QA
 Finally, we ensure that the raw extraction matches successfully maps to our standard schema without losing semantic intent or structural accuracy.
 
 13. **Verify extraction fidelity:**
 * Compare a sample of the extracted CSV rows directly against their native JSON/RDF records in the source API or UI.
-* Verify that the native elements are mapped to the correct columns in the schema (e.g., ensuring that *skos:altLabel* correctly populates *Synonyms*, scope notes population *Description*, and multi-parent arrays properly format into the pipe-separated *Parent_IDs* column).
-* Audit the *Hierarchy_Path* to ensure breadcrumbs are logically ordered (e.g., Broadest > Narrowest) and accurately reflect the source's intended structural hierarchy.
+* Verify that the native elements are mapped to the correct columns in the schema (e.g., ensuring that `skos:altLabel` correctly populates `Synonyms`, scope notes population `Description`, and multi-parent arrays properly format into the pipe-separated `Parent_IDs` column).
+* Audit the `Hierarchy_Path` to ensure breadcrumbs are logically ordered (e.g., Broadest > Narrowest) and accurately reflect the source's intended structural hierarchy.
 
 14. **Audit data loss:**
-* Review the elements of the native source record that were intentionally discarded during the mapping process for any that should be retained (e.g., are there relevant elements that belong in *Synonyms* or *Description*?). It is expected and acceptable to drop administrative or operational metadata (e.g., internal system timestamps, contributor names, internal database IDs).
+* Review the elements of the native source record that were intentionally discarded during the mapping process for any that should be retained (e.g., are there relevant elements that belong in `Synonyms` or `Description`?). It is expected and acceptable to drop administrative or operational metadata (e.g., internal system timestamps, contributor names, internal database IDs).
 
 15. **Consider schema evolution needs:**
 * Consider whether we are losing core structural or semantic relationships (e.g., specific W3C logic types or complex polyhierarchy) simply because there is no corresponding location for this information in our standardized schema.
 * If our source contains an important, widely applicable data point that our schema cannot accommodate, document the conflict in the decision log. Evaluate whether to update the central schema globally to accommodate this new data type, or accept the localized data loss in the interest of cross-source standardization.
+
+
+## Source Ontology Profiles
+
+To achieve 1:1 semantic fidelity in our SSSOM mappings, we must account for the unique architectural paradigms of each source vocabulary. This section documents how external data models are flattened and translated into our standard ingest schema.
+
+### Medical Subject Headings (MeSH)
+
+**Native Architecture:** MeSH does not follow a standard W3C single-node tree structure. It uses a three-tiered "Bucket" system:
+* **Descriptors (D-Nodes):** The official structural tree (e.g., `D033303` Protestantism). These establish the vertical polyhierarchy but do not hold text natively.
+* **Concepts (M-Nodes):** The semantic entities that live *inside* a Descriptor bucket. Every Descriptor has one **Preferred Concept** (identical in meaning to the Descriptor) and often several non-preferred Concepts.
+* **Terms (T-Nodes):** The exact string labels and synonyms attached to Concepts.
+
+**The "Two Senses" of Relatedness:** A major architectural challenge in MeSH is how it defines "related" concepts. It applies this label in two distinct structural contexts:
+1. **Sense 1: Intra-Bucket Associations (Internal M-Nodes):** The NLM often places concepts inside a Descriptor's bucket that are not strictly taxonomic children (`meshv:narrowerConcept`), but rather associative concepts (`meshv:relatedConcept`). For example, "Exorcism" is placed *inside* the "Spiritual Therapies" bucket, and "Stigmata" is placed *inside* the "Christianity" bucket. Despite being described as related, they only exist here and not as narrower concepts of some other D-Node descriptor. 
+2. **Sense 2: Cross-Tree Connections (External D-Nodes):** MeSH also links completely separate branches of the primary tree using `meshv:seeAlso` (or via `meshv:relatedConcept` pointers between Preferred Concepts). For example, "Religion" (Humanities branch) has a `seeAlso` link to "Grief" (Psychology branch).
+
+**Ingestion & SSSOM Strategy:**
+If we mapped MeSH strictly by its formal taxonomic tags, we would lose relevant, domain-specific concepts (like Exorcism) because they lack formal "narrower" tags. Therefore, our pipeline executes a **complete bucket flattening** approach to prioritize data retention over strict taxonomic purity:
+
+1. **D-Node Extraction (The Parent):** We extract the Descriptor and strictly limit its text and exact-match synonyms to its single Preferred Concept. This prevents associative concepts from polluting the exact-match `Synonyms` column.
+2. **M-Node Extraction (The Children):** We query the bucket for *all* non-preferred M-Nodes, regardless of whether the NLM tagged them as `narrowerConcept` or `relatedConcept`. We extract them as entirely distinct rows and assign the D-Node as their `Parent_ID`. While this creates a semantic compromise (treating associative concepts as hierarchical children), it preserves the boundaries of the source vocabulary and prevents silent data loss.
+3. **Lateral Discovery (The Peers):** Cross-tree connections (`meshv:seeAlso` and external related concepts) are excluded from step 1 ingestion. They are harvested in step 2 as candidates for scope expansion, ensuring our vertical hierarchy remains constrained to our targeted seed branches.
+
+### American Folklore Society Ethnographic Terms (AFSET)
+
+**Native Architecture:** AFSET is built as a standard Simple Knowledge Organization System (SKOS) vocabulary. It asserts concepts (`skos:Concept`) and organizes them with formal broader/narrower relationships (`skos:broader`, `skos:narrower`), alternative labels (`skos:altLabel`), and lateral associations (`skos:related`).
+
+**Ingestion & SSSOM Strategy:**
+1. **Local Bulk Parsing:** The Library of Congress limits the speed of live API requests. Rather than crawling the live REST endpoint, we use **Strategy A**. We download the complete ontology as an N-Triples (`.nt`) file and use Python's `rdflib` to load the entire graph into local memory. This allows for rapid, deep traversal of the dataset without network interruptions or API limits.
+2. **Dynamic Breadcrumbs:** Because the graph is fully loaded in memory, the ingestion script dynamically constructs the `Hierarchy_Path` string by recursively querying a concept's `skos:broader` relationships until it reaches a root node. This ensures complete contextual paths regardless of where the seed traversal began.
+3. **Lateral Exclusion:** Consistent with our goal to prepare the dataset for SSSOM harmonization, we actively ignore `skos:related` edges during Phase 1 ingestion, extracting only the vertical taxonomy. We harvest these lateral links separately in Phase 2 to suggest potential new branches for scope review.
+
+### Getty Art & Architecture Thesaurus (AAT)
+
+**Native Architecture:** AAT is built on SKOS but heavily uses custom Getty Vocabulary Program (GVP) extensions. Its defining structural feature is deep **polyhierarchy**—meaning a single concept can have multiple valid broader parents across entirely different branches of the tree. 
+
+**Ingestion & SSSOM Strategy:**
+Extracting polyhierarchical data into a flat CSV format requires careful handling to preserve both human readability and machine logic. Our strategy manages this through a "Hybrid Approach" combined with highly optimized SPARQL queries:
+
+1. **Subtree Extraction via SPARQL:** Because AAT is massive, node-by-node REST API crawling is prohibitively slow, and downloading the full bulk file requires processing gigabytes of art history data that are not relevant to this project. We solve this by querying the live SPARQL endpoint using the custom `gvp:broaderExtended` property. This allows the script to request a seed concept and instantly return all of its descendants in a single, batched network call.
+2. **Resolving Polyhierarchy (The Hybrid Approach):** To fit polyhierarchy into our standard schema without creating duplicate rows:
+   * **Visual Hierarchy:** We query `gvp:parentString` to extract a single, linear "preferred path" designated by Getty editors. This is formatted and saved to the `Hierarchy_Path` column to ensure clear visual breadcrumbs for UI search functionality.
+   * **Mathematical Hierarchy:** Simultaneously, we query all `skos:broader` relationships and compress every immediate parent ID into a pipe-separated string in the `Parent_IDs` column. This ensures downstream mapping tools have the complete, true graph structure.
+3. **Native Crosswalk Extraction:** AAT contains thousands of native mappings to other vocabularies (like LCSH). The SPARQL query explicitly extracts `skos:exactMatch`, `skos:closeMatch`, and `owl:sameAs` links directly into our `Crosswalks` column, pre-loading data for Phase 3 harmonization.
+
+
+### Thesaurus for Graphic Materials (TGM)
+
+**Native Architecture:** TGM is maintained by the Library of Congress and is built on a standard SKOS data model. Unlike traditional ontologies designed for deep logical classification, TGM is a vocabulary built specifically for indexing the visual subjects of photographs and prints. Its structure is relatively shallow and flat, relying heavily on associative links (`skos:related`) rather than deep taxonomic trees (`skos:broader`/`skos:narrower`).
+
+**Ingestion & SSSOM Strategy:**
+Because TGM is a smaller, shallow vocabulary, a live API crawl is highly efficient. Our strategy leverages its flat nature to map complete sub-trees:
+
+1. **Targeted Depth-First Crawl (Strategy B):** We rely on a hardcoded list of verified target seeds. The script hits the Library of Congress REST API (`id.loc.gov`) and executes a depth-first recursive crawl for all `skos:narrower` concepts. Because the TGM hierarchy is shallow, downward semantic drift is not a risk. Therefore, we extract the entire narrower branch for each seed without imposing a depth limit. (Lateral drift is prevented by strictly ignoring `skos:related` links during this primary extraction.)
+2. **Bottom-Up Ancestry Resolution:** To build complete breadcrumb paths, the script uses a recursive `get_full_tgm_path` function that queries upward (`skos:broader`) from each discovered node to the absolute root, caching paths locally to minimize redundant API calls.
+3. **Aggressive Crosswalk Extraction:** TGM includes many manual mapping links to other vocabularies (e.g., LCSH and AAT). The script explicitly extracts formal equivalences (`skos:exactMatch`, `owl:sameAs`) as well as unstructured textual mapping notes embedded in `skos:note`, aggregating them into the `Crosswalks` column to support Phase 3 SSSOM harmonization.
+
+
+### European Language Social Science Thesaurus (ELSST)
+
+**Native Architecture:** ELSST is a broad social science thesaurus managed by the Consortium of European Social Science Data Archives (CESSDA). It is hosted on a Skosmos REST API and strictly follows W3C SKOS logic (`skos:broader`, `skos:narrower`). Its defining structural feature is **multilingualism**: every property (labels, notes, altLabels) is heavily nested in language-tagged arrays to support pan-European data discovery.
+
+**Ingestion & SSSOM Strategy:**
+Because ELSST is a cleanly structured, hierarchical SKOS vocabulary, our ingestion strategy focuses on traversing the vertical taxonomy while isolating the English language layer:
+
+1. **Targeted Skosmos API Crawl (Strategy B):** We rely on a hardcoded list of verified target seeds. The script queries the `/narrower` endpoint of the Skosmos API to execute a depth-first recursive crawl, extracting entire sub-trees beneath the target nodes without depth limits.
+2. **Multilingual Array Filtering:** To map the complex, language-tagged JSON arrays (e.g., `[{"lang": "en", "value": "Religion"}, {"lang": "de", "value": "Religion"}]`) into flat CSV columns, the script uses a `get_english_value` helper function. This strictly extracts only strings tagged with `en` for the `Primary_Label`, `Synonyms`, and `Description` columns. 
+3. **Translation Flagging:** To preserve the knowledge that a concept has pan-European utility, the script evaluates the arrays and inserts a `yes` into the schema's `Has_Translation` column if non-English strings are present, without explicitly extracting them.
+4. **Native Crosswalk Extraction:** ELSST natively contains mappings to other vocabularies. The API extraction isolates formal matching properties (e.g., `skos:exactMatch`, `skos:broadMatch`) and aggregates those target URIs into the `Crosswalks` column to support SSSOM harmonization.
+
+
+### Health Level Seven International (HL7 v2 & v3)
+
+**Native Architecture:** HL7 is an international set of standards for the transfer of clinical and administrative data. The HL7 Terminology (THO) publishes distinct `CodeSystems` defining acceptable values for specific data fields. In this project, we target the specific CodeSystems governing "Religious Affiliation." The data is structured hierarchically within a single JSON document (following the FHIR standard), where narrower concepts are nested inside arrays attached to their broader parents.
+
+**Ingestion & SSSOM Strategy:**
+Because the targeted subsets of HL7 are very small (fewer than 200 terms combined) and fully contained within individual JSON payloads, we do not need to execute an iterative network crawl:
+
+1. **Bulk JSON Download:** The script downloads the complete FHIR JSON payload for both the v2 and v3 Religious Affiliation CodeSystems in single network requests.
+2. **Recursive In-Memory Parsing:** Rather than making subsequent API calls to find narrower terms, the script uses a recursive Python function (`process_hl7_item`) to walk down the nested `concept` arrays within the local JSON object.
+3. **Deprecation Handling:** HL7 actively deprecates older terms. The script parses the `property` array for each concept to identify its lifecycle status (e.g., extracting the `deprecationDate`) and writes this to the `Status` column, ensuring downstream SSSOM mappings do not inadvertently align to retired terminology.

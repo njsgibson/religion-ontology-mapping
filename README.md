@@ -3,15 +3,13 @@
 ## Project Vision
 This repository is intended to provide a standardized environment for aggregating and mapping religion-related concepts (e.g., religious traditions, practices, beliefs) across major disciplinary ontologies. The ultimate goal is to translate specialized terminology into a unified, machine-readable format (aligned with SSSOM and W3C standards) to support cross-domain data integration.
 
-This repository is intended to provide a standardized environment for aggregating and mapping religion-related concepts across major disciplinary ontologies.
-
 **High-Level Goals:**
 * **Promoting FAIR Standards:** Encouraging the adoption of Linked Open Data formats and FAIR standards for religion-related data among researchers and organizations already willing to share data (e.g., ARDA, Pew Research Center).
 * **Advocating for Openness:** Encouraging greater openness among major, currently proprietary stewards of data on religion (e.g., ATLA, World Religion Database).
 * **Cross-Disciplinary Interoperability:** Enabling the reuse of religion-related data across distinct scientific disciplines (e.g., helping evolutionary demographers of religion to find and reuse theory-relevant data collected by epidemiologists in medical cohort studies).
 * **Bridging Schemas:** Matching and mapping concepts across diverse schemas to directly aid data interoperability where it has not yet been done, or not done well.
 * **Creating Future Standards:** Exploring the value of creating authoritative lists of religion-related terms for future integration into other systems.
-* **Metadata Consensus:** Building consensus metadata schemas for the domain of religion to enable the findability of large datasets (e.g., household panel surveys) that include data about specific aspects of religion (e.g., religious service attendance).
+* **Metadata Consensus:** Building consensus metadata schemas for the domain of religion to enable the findability and reusability of large datasets (e.g., household panel surveys) that include data about specific aspects of religion (e.g., some measure of religious service attendance).
 
 ## 2. Primary Use Cases
 The integrated dataset is engineered to explicitly support several future use cases:
@@ -41,6 +39,8 @@ To ensure downstream machine-readability, the pipeline extracts structural metad
 * **LOINC** (Logical Observation Identifiers Names and Codes)
 * **SNOMED CT** (Systematized Nomenclature of Medicine - Clinical Terms)
 * **TGM** (Thesaurus for Graphic Materials)
+* **AFSET**
+* **MeSH***
 
 ## 5. Pipeline Architecture
 All source data is processed through a decoupled, 3-step Medallion-style architecture:
@@ -48,7 +48,7 @@ All source data is processed through a decoupled, 3-step Medallion-style archite
 1.  **Centralized Configuration:** All scripts dynamically read from a master `config/source_registry.csv`. A central Python module (`config/ingest_schema_manager.py`) strictly enforces the **15-column output format**, which includes `Crosswalks` to capture native external mappings.
 2.  **Raw Extraction (Bronze):** Individual ingestion scripts query source APIs, trace hierarchical paths, and write standard metadata to isolated raw files (e.g., `data/raw/raw_elsst.csv`). 
     * *Representational Semantics:* Extracts structural metadata (the `Concept_Type` column) using W3C standard semantics (e.g., `skos:Concept`, `owl:Class`).
-    * *Smart Caching:* High-latency APIs utilize a "Smart Resume" client-side cache to prevent data loss during long iterative crawls.
+    * *Smart Caching:* High-latency APIs use a "Smart Resume" client-side cache to prevent data loss during long iterative crawls.
     * *Polyhierarchy Handling:* Extracts a single "Preferred Path" for human-readable visual breadcrumbs, while preserving full graph logic via pipe-separated IDs in the `Parent_IDs` column.
     * *Flattening over Graphing:* To support SSSOM tabular mapping, we intentionally drop internal lateral/associative edges (e.g., `skos:related`) during extraction. Reconstructing native graphs works against our goal of a unified, searchable format.
 3.  **Consolidation & QA (Silver):** A dedicated processing script vacuums up all `raw_*.csv` files, runs quality assurance checks, deduplicates based on URI, and exports the final `master_ontology_dataset.csv`.
@@ -56,7 +56,7 @@ All source data is processed through a decoupled, 3-step Medallion-style archite
 ## 6. Documentation Strategy
 Further project documentation can be found in the following locations:
 1.  **`METHODOLOGY.md`:** Describes approach to identifying and ingesting data from source ontologies, including algorithmic rules for handling complex architectures.
-2.  **`source_registry.csv`:** Includes summary of ingestion strategy for each source in `Ingest_Strategy` column.
+2.  **`source_registry.csv`:** A static metadata registry containing base URIs, formal source names, and licensing information for all active ontologies.
 3.  **`DECISION_LOG.md`:** An append-only diary logging major architectural decisions (e.g., intentional data dropping, schema evolution limits).
 4.  **Self-documenting code:** Extraction logic, API pacing, and edge-case handling are heavily commented directly within the respective Jupyter notebooks.
 
@@ -74,7 +74,7 @@ The repository is structured to cleanly separate configuration, ingestion logic,
 * `config/`
     * `ingest_schema_manager.py`: Master Python class enforcing column alignment and registry lookups.
     * `data_dictionary.csv`: Definitions of standard schema for ingested data.
-    * `source_registry.csv`: Active CURIE-to-URI resolution table and ingest strategy notes.
+    * `source_registry.csv`: Active CURIE-to-URI resolution table and license information.
     * `.env.example`: Template for local environment variables.
 * `DECISION_LOG.md`: Chronological log of architectural definitions and scoping rules.
 * `ingestion_tracker.csv`: Log of progress in developing ingestion scripts.
