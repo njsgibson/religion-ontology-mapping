@@ -61,7 +61,7 @@ After locating relevant concepts, the source's architecture must be assessed to 
 
 9. **Determine ingestion modality and API interaction approach:**
 * Can the required data be retrieved via a single bulk download (e.g., N-Triples, flat JSON) or does it require an iterative, node-by-node crawl via REST, FHIR, or SPARQL endpoints? To accommodate diverse architectures and strict rate limits, use one of two primary strategies:
-  * **Strategy A: Local Bulk Parsing (Primary/Preferred):** For vocabularies offering complete data dumps (e.g., AFSET, AAT, SNOMED), bypass REST APIs entirely to ensure high-speed extraction and avoid institutional server rate-limits. Download the complete ontology (preferring SKOS/RDF N-Triples `.nt` format for memory efficiency) and store it in `data/external/`. Python scripts use `rdflib` to load the local graph into RAM, enabling rapid, network-independent recursive mapping.
+  * **Strategy A: Local Bulk Parsing (Primary/Preferred):** For vocabularies offering complete data dumps (e.g., AFSET, AAT, SNOMED), bypass REST APIs entirely to ensure high-speed extraction and avoid institutional server rate-limits. Download the complete ontology (preferring SKOS/RDF N-Triples `.nt` format, but also including structured .xlsx or .hmtl) and store it in `data/external/`. Python scripts use `rdflib` to load the local graph into RAM, enabling rapid, network-independent recursive mapping.
   * **Strategy B: Live API Crawling (Fallback/Targeted):** Use exclusively when bulk downloads are unavailable, or when targeting a highly specific subset of a massive ontology (e.g., LCSH Demographic Groups).
     * *SPARQL Exception:* For endpoints like MeSH that offer SPARQL but restrict query execution time, avoid complex graph-traversal queries. Instead, write atomic, single-purpose queries (e.g., "get children of X") and manage the traversal queue locally in Python.
 * What identifying headers or authentication tokens are needed? (e.g., LOINC requires registered credentials; LOC requires an identified User-Agent).
@@ -252,3 +252,45 @@ Because no API endpoint exists, we utilize a local memory-parsing strategy:
 1. **Local Bulk Parsing (Strategy A):** The script reads the raw ABS `.xlsx` file (specifically "Table 1.3") directly into memory using Pandas. It scans the unformatted rows to extract the numeric codes and their corresponding string labels into a flat dictionary, discarding administrative boilerplate text.
 2. **Mathematical Hierarchy Reconstruction:** Rather than relying on traditional `skos:broader` tags, the script reverse-engineers the vertical taxonomy using string slicing. For any 6-digit code (e.g., `151111`), it deduces the Narrow parent by slicing the first four characters (`1511`) and the Broad grandparent by slicing the first two characters (`15`). These slices are used to populate the `Parent_IDs` column and accurately construct the contextual breadcrumbs for the `Hierarchy_Path`.
 3. **Identifier Management (No LOD):** Because the ABS does not publish ASCRG as Linked Open Data, there are no resolvable web URIs for these concepts. To satisfy the unique identifier requirements of the Simple Standard for Sharing Ontology Mappings (SSSOM) without synthesizing fake or non-resolving web addresses, the pipeline synthesizes a standard CURIE (e.g., `ASCRG:151111`) to serve as the primary key but leaves the schema's `URI` column intentionally blank.
+
+
+### Office for National Statistics (ONS) – Census 2021 Religion Classifications
+
+**Native Architecture:** The UK's Office for National Statistics (ONS) publishes the "Religion (detailed)" census variables. These data are not published as a bulk Linked Open Data file or via a formal API endpoint; rather they are published as static HTML tables on the ONS dictionary web pages. The data is entirely flat, consisting of alphanumeric codes and strings. Two overlapping classifications exist on the same page: the 191-category "Religion" table and the 58-category "Religion 58a" table.
+
+**Ingestion & SSSOM Strategy:**
+To extract this data efficiently without unnecessary manual downloads, we rely on a modified Web Scraping approach:
+
+1. **Direct HTML Extraction (Strategy B):** The script executes a single HTTP request to the target ONS URL and uses Pandas' built-in HTML parser to lift the tables directly into memory. It enforces string data-typing during extraction to prevent Pandas from truncating zero-padded strings (e.g., converting code `001` to `1`).
+2. **Strict Flat Extraction Rule:** The ONS "58a" table utilizes colons to group related text visually (e.g., "Other religion: Pagan"). Consistent with our architectural rules to avoid synthesizing false taxonomic hierarchy, the script performs a strict extraction. It maps the full, unadulterated string to both the `Primary_Label` and `Hierarchy_Path` columns without attempting to split it into a parent-child relationship.
+3. **Identifier Management (No LOD):** The ONS does not assign resolvable URIs to these variables. To satisfy the unique identifier requirements of the Simple Standard for Sharing Ontology Mappings (SSSOM), the script synthesizes a primary key. To prevent ID collisions between the two overlapping tables (e.g., both use code `1`), the script prepends the classification mnemonic to the code (e.g., `ONS:religion-001` vs `ONS:religion_58a-1`), leaving the schema's `URI` column intentionally blank.
+4. **Operational Code Filtering:** The script actively drops administrative and error-handling codes utilized by census administrators (e.g., `-9 Missing`, `-8 Code not required`, and `900 Not answered`), retaining only genuine, religion-related conceptual data.
+
+
+### Association of Religion Data Archives (ARDA)
+
+**Native Architecture:** The ARDA provides sociological classifications of religious groups. Rather than publishing a unified, machine-readable ontology (LOD) or a standard API, ARDA divides its conceptual data into two distinct web-based architectures:
+1. **US Religious Groups:** A massive, flat HTML index of over 1,100 active groups, categorized sociologically by "Tradition" and "Family." Detailed descriptions exist only on individual HTML landing pages.
+2. **World Religion Family Trees:** Interactive web visualizations mapping the lineage of major world religions (e.g., Buddhism, Islam). The underlying relational data is not in HTML tables, but rather embedded directly within the page source as JavaScript/JSON arrays utilized by the GoJS visualization library.
+3. **Measurements:** An HTML index of more than 160 single-item measurement concepts, categorized by higher-order concepts like "Spiritual Experiences" and "Religious/Metaphysical Beliefs". Descriptions and examples of measures targetting these concepts exist on individual HTML landing pages.
+
+**Ingestion & SSSOM Strategy:**
+Because of the bifurcated architecture, the pipeline uses two distinct ingestion scripts (both using variations of Strategy B) to fit our standard schema.
+
+**Part A: US Religious Groups (Nested Web Scraping)**
+1. **Targeted Nested Crawl (Strategy B):** The script first scrapes the primary ARDA HTML index table to harvest the Group Name, internal Group ID (`gid`), Tradition, and Family for every active US group. It then executes a secondary, nested HTTP request to each group's specific landing page to scrape the `articleBody` for the detailed historical description.
+2. **Contextual Hierarchy Construction:** Because ARDA's "Tradition" is an overarching category rather than a direct parent, the script constructs a strict two-tier `Hierarchy_Path` (`Family > Group Name`). The overarching "Tradition" is preserved as a metadata prefix within the `Description` column to prevent semantic data loss.
+3. **Identifier Management (No LOD):** ARDA concepts lack native Semantic Web URIs. To satisfy SSSOM requirements, the script synthesizes a CURIE using the `ARDA:[gid]` pattern. The landing page URL (e.g., `https://www.thearda.com/...gid=123`) is extracted and mapped to the `URI` column to serve as the resolvable source of truth.
+4. **Text Normalization:** ARDA profile descriptions contain multi-paragraph histories and embedded HTML whitespace. To ensure the Bronze Layer remains a strictly flat, machine-readable CSV, the script normalizes the text by replacing all carriage returns, newlines, and special space characters with a single standard space, and strips stray quotation marks.
+
+**Part B: World Religion Family Trees (JSON Extraction)**
+1. **Surgical JSON Extraction (Strategy B):** The script uses regular expressions to extract the raw JSON node and edge arrays embedded inside the GoJS `<script>` tags from the  the ARDA World Religion Tree web pages. 
+2. **Mathematical Graph Reconstruction:** The script loads the extracted JSON arrays into local memory to build a relational map. It uses the `ParentKey` and `ChildKey` edges to recursively resolve bottom-up ancestry paths for the `Hierarchy_Path`.
+3. **Polyhierarchy Handling:** The ARDA World Trees occasionally feature polyhierarchy (e.g., a group inheriting from two different parent nodes). The script captures all immediate parents into a pipe-separated string in the `Parent_IDs` column, while defaulting to the first listed parent to generate a clean visual breadcrumb trail.
+4. **ID Collision Prevention:** To prevent World Religion node IDs (e.g., `5070`) from colliding with US Group IDs during downstream deduplication and mapping, the script synthesizes the World Religion CURIEs by prepending a 'W' (e.g., `ARDA:W5070`).
+5. **Data Pruning:** Visual and historical attributes used strictly for the GoJS frontend (e.g., node colors, "Active" flags, and founding date strings) are intentionally discarded, because they fall outside the structural scope of the core conceptual schema.
+
+**Part C: Measurements**
+1. **Nested Crawl (Strategy B):** The script scrapes the ARDA Measurements index table to extract the names and IDs (`scid`) of 165 high-level conceptual variables (e.g., "Belief in God", "Christian Nationalism"). It executes a nested crawl to the landing page to extract the conceptual definition, deliberately stopping DOM traversal before extracting the dozens of underlying survey questions attached to the concept.
+2. **Category as Parent:** The table's "Measurement Category" (e.g., "Religious Attitudes") is mapped directly to the `Parent_IDs` column and used to construct the two-tier `Hierarchy_Path`.
+3. **ID Collision Prevention:** To prevent measurement IDs from colliding with US Group or World Tree IDs during consolidation, the pipeline synthesizes these CURIEs by prepending an 'M' (e.g., `ARDA:M27`).

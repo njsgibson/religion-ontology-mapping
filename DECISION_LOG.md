@@ -50,3 +50,18 @@
 * **Context:** The lateral discovery workflow (mining `skos:related` links) requires multiple iterative passes as new seeds are added. Previously, this ran the risk of repeatedly suggesting the same irrelevant "cousin" concepts that a human reviewer had already decided to ignore.
 * **Decision:** We implemented a "Stateful Inbox" workflow using a single, ephemeral `lateral_candidates.csv` file. The discovery script reads this file to build an in-memory "Do Not Suggest" suppression list, tags net-new discoveries with an incrementing `Discovery_Pass` integer, and sorts the newest candidates to the top.
 * **Reasoning:** This allows the pipeline to "remember" human rejections simply by leaving them in the CSV. It prevents redundant human review while keeping the repository free of permanent, cluttering history log files. Once a vocabulary is fully mapped, the ephemeral candidate CSV is safely deleted.
+
+### 2026-03-17: Synthesizing CURIEs for Non-LOD Sources
+* **Context:** Several prioritized vocabularies (e.g., ASCRG, ONS Census classifications, and ARDA) are published as flat spreadsheets or HTML tables rather than Linked Open Data (LOD). They possess local alphanumeric codes but lack globally unique, resolvable Semantic Web URIs. However, the downstream Simple Standard for Sharing Ontology Mappings (SSSOM) requires stable primary keys (CURIEs).
+* **Decision:** For non-LOD sources, the pipeline synthesizes a CURIE by concatenating the registered `SOURCE_PREFIX` with the source's native internal identifier (e.g., `ASCRG:151111`, `ONS:religion-001`, `ARDA:393`). The formal `URI` column in the schema is intentionally left blank unless a stable, concept-specific web URL exists to act as a functional surrogate (as was done with ARDA's profile pages). 
+* **Reasoning:** SSSOM harmonization relies fundamentally on distinct identifiers. Synthesizing a CURIE ensures these valuable sociological and demographic datasets can be mapped against formal medical and library ontologies without hallucinating fake or non-resolving URIs. Leaving the `URI` column blank accurately reflects the source's non-LOD architectural reality while maintaining schema integrity.
+
+### 2026-03-17: Strict Whitespace Normalization for Text Fields
+* **Context:** During ARDA ingestion, profile descriptions contained literal carriage returns, newlines (`\r\n`), and non-breaking HTML spaces. When Pandas exported these to CSV, it wrapped the strings in double quotes, but the internal line breaks persisted, which breaks flat-file parsing in downstream applications and SSSOM tools.
+* **Decision:** The pipeline now strictly enforces regex-based whitespace normalization (`re.sub(r'\s+', ' ', text)`) and quotation stripping for all long-form text fields (like `Description`).
+* **Reasoning:** A "Bronze Layer" must be a purely flat, machine-readable CSV. Preserving visual paragraph breaks sacrifices interoperability and data stability.
+
+### 2026-03-17: Namespace Segregation for Internal ID Collisions
+* **Context:** ARDA's website maintains two distinct databases (US Religious Groups and World Religion Family Trees) that utilize overlapping integer sequences for their internal IDs (e.g., both databases might have a group with ID "12").
+* **Decision:** When synthesizing CURIEs for the World Religion dataset, the script explicitly prepends a 'W' to the local ID (e.g., `ARDA:W12` instead of `ARDA:12`).
+* **Reasoning:** This ensures absolute uniqueness within the `ARDA` namespace and prevents catastrophic ID collisions during the Phase 2 deduplication and consolidation processes.

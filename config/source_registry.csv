@@ -1,13 +1,15 @@
 ﻿Prefix,Source_Name,Base_URI,License,Home_URL,Version
-LOINC,Logical Observation Identifiers Names and Codes,https://loinc.org/,LOINC License (Registration Required),https://loinc.org/,
-ELSST,European Language Social Science Thesaurus,https://elsst.cessda.eu/id/6/,CC BY 4.0,https://elsst.cessda.eu/,
-HL7v3,HL7 v3 Religious Affiliation,http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation,HL7 Terminology License,https://terminology.hl7.org/,
-HL7v2,HL7 v2 Religion,http://terminology.hl7.org/CodeSystem/v2-0006,HL7 Terminology License,https://terminology.hl7.org/,
-LCDGT,LC Demographic Group Terms,http://id.loc.gov/authorities/demographicTerms/,Public Domain,https://id.loc.gov/authorities/demographicTerms.html,
-SNOMED,SNOMED CT,http://snomed.info/id/,SNOMED Affiliate License (Registration Required),https://www.snomed.org/,
-LCSH,Library of Congress Subject Headings,http://id.loc.gov/authorities/subjects/,Public Domain,https://id.loc.gov/authorities/subjects.html,
-AAT,Getty Art & Architecture Thesaurus,http://vocab.getty.edu/aat/,ODC-BY 1.0,https://www.getty.edu/research/tools/vocabularies/aat/,
-TGM,Thesaurus for Graphic Materials,http://id.loc.gov/vocabulary/graphicMaterials/,Public Domain,https://www.loc.gov/pictures/collection/tgm/,
-AFSET,LC Ethnographic Terms,http://id.loc.gov/vocabulary/ethnographicTerms/,Public Domain,https://id.loc.gov/vocabulary/ethnographicTerms.html,
-MeSH,Medical Subject Headings,http://id.nlm.nih.gov/mesh/,Public Domain,https://www.nlm.nih.gov/mesh/meshhome.html,
+LOINC,Logical Observation Identifiers Names and Codes,https://loinc.org/,LOINC License (registration required),https://loinc.org/,2.78
+ELSST,European Language Social Science Thesaurus,https://elsst.cessda.eu/id/6/,CC BY 4.0,https://elsst.cessda.eu/,4.0
+HL7v3,HL7 v3 Religious Affiliation,http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation,HL7 Terminology License,https://terminology.hl7.org/,2025
+HL7v2,HL7 v2 Religion,http://terminology.hl7.org/CodeSystem/v2-0006,HL7 Terminology License,https://terminology.hl7.org/,2.9
+LCDGT,LC Demographic Group Terms,http://id.loc.gov/authorities/demographicTerms/,Public Domain,https://id.loc.gov/authorities/demographicTerms.html,2025-11
+SNOMED,SNOMED CT,http://snomed.info/id/,SNOMED Affiliate License (Registration Required),https://www.snomed.org/,2026-01-INT
+LCSH,Library of Congress Subject Headings,http://id.loc.gov/authorities/subjects/,Public Domain,https://id.loc.gov/authorities/subjects.html,46.0
+AAT,Getty Art & Architecture Thesaurus,http://vocab.getty.edu/aat/,ODC-BY 1.0,https://www.getty.edu/research/tools/vocabularies/aat/,2025-12
+TGM,Thesaurus for Graphic Materials,http://id.loc.gov/vocabulary/graphicMaterials/,Public Domain,https://www.loc.gov/pictures/collection/tgm/,2024-06
+AFSET,LC Ethnographic Terms,http://id.loc.gov/vocabulary/ethnographicTerms/,Public Domain,https://id.loc.gov/vocabulary/ethnographicTerms.html,2025-08
+MeSH,Medical Subject Headings,http://id.nlm.nih.gov/mesh/,Public Domain,https://www.nlm.nih.gov/mesh/meshhome.html,2026
 ASCRG,Australian Standard Classification of Religious Groups,,CC BY 4.0,https://www.abs.gov.au/statistics/classifications/australian-standard-classification-religious-groups,2024
+ONS,Office for National Statistics,,OGL v3.0,https://www.ons.gov.uk/census/census2021dictionary/variablesbytopic/ethnicgroupnationalidentitylanguageandreligionvariablescensus2021/religiondetailed/classifications,2021
+ARDA,Association of Religion Data Archives,,ARDA Terms of Use,https://www.thearda.com/

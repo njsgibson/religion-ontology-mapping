@@ -41,6 +41,8 @@ To ensure downstream machine-readability, the pipeline extracts structural metad
 * **TGM** (Thesaurus for Graphic Materials)
 * **AFSET**
 * **MeSH***
+* **ASCRG** (Australian Standard Classification of Religious Groups)
+* **ONS** (Office for National Statistics - UK Census 2021)
 
 ## 5. Pipeline Architecture
 All source data is processed through a decoupled, 3-step Medallion-style architecture:
