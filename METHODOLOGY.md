@@ -240,3 +240,15 @@ Extracting SNOMED CT requires a hybrid API strategy to navigate its scale while 
 2. **Detailed Node Extraction (Strategy B):** The script iterates through the discovered IDs, querying the Snowstorm Browser API to extract the full JSON metadata payload for each concept. 
 3. **Preserving Description Logic:** To ensure downstream mapping tools understand the semantic weight of the source data, the script extracts SNOMED's `definitionStatus` property and maps it to our W3C `Concept_Type` column (saving concepts as either `owl:Class (Primitive)` or `owl:Class (Fully Defined)`).
 4. **Taxonomic Isolation:** While SNOMED payloads contain associative relationships (e.g., "Finding site", "Interprets"), the script intentionally filters the `relationships` array to extract *only* `typeId: 116680003` ("Is a") relationships. This ensures that the `Parent_IDs` column and the recursive `Hierarchy_Path` accurately reflect the vertical taxonomy without being polluted by lateral clinical attributes.
+
+
+### Australian Standard Classification of Religious Groups (ASCRG)
+
+**Native Architecture:** The ASCRG is a taxonomy published by the Australian Bureau of Statistics (ABS). It does not use Linked Open Data formats or assign resolvable URIs to its concepts. Instead, it is distributed as a flat spreadsheet where relationships are defined by strict mathematical character lengths. The hierarchy consists of Broad groups (2-digit codes), Narrow groups (4-digit codes), and specific Religious groups (6-digit codes). 
+
+**Ingestion & SSSOM Strategy:**
+Because no API endpoint exists, we utilize a local memory-parsing strategy:
+
+1. **Local Bulk Parsing (Strategy A):** The script reads the raw ABS `.xlsx` file (specifically "Table 1.3") directly into memory using Pandas. It scans the unformatted rows to extract the numeric codes and their corresponding string labels into a flat dictionary, discarding administrative boilerplate text.
+2. **Mathematical Hierarchy Reconstruction:** Rather than relying on traditional `skos:broader` tags, the script reverse-engineers the vertical taxonomy using string slicing. For any 6-digit code (e.g., `151111`), it deduces the Narrow parent by slicing the first four characters (`1511`) and the Broad grandparent by slicing the first two characters (`15`). These slices are used to populate the `Parent_IDs` column and accurately construct the contextual breadcrumbs for the `Hierarchy_Path`.
+3. **Identifier Management (No LOD):** Because the ABS does not publish ASCRG as Linked Open Data, there are no resolvable web URIs for these concepts. To satisfy the unique identifier requirements of the Simple Standard for Sharing Ontology Mappings (SSSOM) without synthesizing fake or non-resolving web addresses, the pipeline synthesizes a standard CURIE (e.g., `ASCRG:151111`) to serve as the primary key but leaves the schema's `URI` column intentionally blank.
