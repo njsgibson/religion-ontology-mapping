@@ -122,6 +122,7 @@ If we mapped MeSH strictly by its formal taxonomic tags, we would lose relevant,
 2. **M-Node Extraction (The Children):** We query the bucket for *all* non-preferred M-Nodes, regardless of whether the NLM tagged them as `narrowerConcept` or `relatedConcept`. We extract them as entirely distinct rows and assign the D-Node as their `Parent_ID`. While this creates a semantic compromise (treating associative concepts as hierarchical children), it preserves the boundaries of the source vocabulary and prevents silent data loss.
 3. **Lateral Discovery (The Peers):** Cross-tree connections (`meshv:seeAlso` and external related concepts) are excluded from step 1 ingestion. They are harvested in step 2 as candidates for scope expansion, ensuring our vertical hierarchy remains constrained to our targeted seed branches.
 
+
 ### American Folklore Society Ethnographic Terms (AFSET)
 
 **Native Architecture:** AFSET is built as a standard Simple Knowledge Organization System (SKOS) vocabulary. It asserts concepts (`skos:Concept`) and organizes them with formal broader/narrower relationships (`skos:broader`, `skos:narrower`), alternative labels (`skos:altLabel`), and lateral associations (`skos:related`).
@@ -130,6 +131,7 @@ If we mapped MeSH strictly by its formal taxonomic tags, we would lose relevant,
 1. **Local Bulk Parsing:** The Library of Congress limits the speed of live API requests. Rather than crawling the live REST endpoint, we use **Strategy A**. We download the complete ontology as an N-Triples (`.nt`) file and use Python's `rdflib` to load the entire graph into local memory. This allows for rapid, deep traversal of the dataset without network interruptions or API limits.
 2. **Dynamic Breadcrumbs:** Because the graph is fully loaded in memory, the ingestion script dynamically constructs the `Hierarchy_Path` string by recursively querying a concept's `skos:broader` relationships until it reaches a root node. This ensures complete contextual paths regardless of where the seed traversal began.
 3. **Lateral Exclusion:** Consistent with our goal to prepare the dataset for SSSOM harmonization, we actively ignore `skos:related` edges during Phase 1 ingestion, extracting only the vertical taxonomy. We harvest these lateral links separately in Phase 2 to suggest potential new branches for scope review.
+
 
 ### Getty Art & Architecture Thesaurus (AAT)
 
@@ -180,3 +182,61 @@ Because the targeted subsets of HL7 are very small (fewer than 200 terms combine
 1. **Bulk JSON Download:** The script downloads the complete FHIR JSON payload for both the v2 and v3 Religious Affiliation CodeSystems in single network requests.
 2. **Recursive In-Memory Parsing:** Rather than making subsequent API calls to find narrower terms, the script uses a recursive Python function (`process_hl7_item`) to walk down the nested `concept` arrays within the local JSON object.
 3. **Deprecation Handling:** HL7 actively deprecates older terms. The script parses the `property` array for each concept to identify its lifecycle status (e.g., extracting the `deprecationDate`) and writes this to the `Status` column, ensuring downstream SSSOM mappings do not inadvertently align to retired terminology.
+
+
+### Library of Congress Demographic Group Terms (LCDGT)
+
+**Native Architecture:** LCDGT is a specialized SKOS vocabulary maintained by the Library of Congress. Rather than indexing general subjects, it catalogs the demographic attributes of people, grouping mathematically unrelated concepts by broad thematic domains using `skos:Collection` (e.g., `collection_LCDGT_Religion`). However, certain religion-related terms (such as occupational roles like "Clergy" or "Chaplains") are filed under the "Occupation" collection, meaning a strict single-collection filter is insufficient.
+
+**Ingestion & SSSOM Strategy:**
+To capture the full scope of relevant terms while accurately portraying their contextual placement, we use a hybrid discovery approach coupled with a dynamic path builder:
+
+1. **Hybrid Discovery (Strategy B):** * **Collection Harvesting:** The script first queries the LoC search endpoint, filtering for `collection_LCDGT_Religion`, and harvests the URIs of every member term.
+   * **Explicit Seed Crawling:** Second, the script uses a predefined list of explicit seed URIs (e.g., the URI for "Clergy") to capture relevant branches located in other collections. It executes a downward recursive crawl (`skos:narrower`) to ensure all descendants of those seeds are added to the processing queue. Seed URIs were selected by manually searching for key terms (e.g., relig*, spirit*, clergy) on the LC Linked Data Service browser.
+2. **Collection-Rooted Ancestry Resolution:** Because the initial extraction results in a flat list of URIs, the script reverse-engineers the hierarchy. It uses a recursive Python function (`get_full_lc_path`) to query the `skos:broader` parent for each term, climbing up to the absolute root. When it reaches the top node of a branch, it queries the `mads:isMemberOfMADSCollection` property to extract the collection's label. This label is prepended to construct a complete, contextual breadcrumb path (e.g., `Religion > Christians > Baptists` or `Occupation > Clergy > Pastors`). This path is cached locally to prevent redundant API calls.
+
+
+### Logical Observation Identifiers Names and Codes (LOINC)
+
+**Native Architecture:** Unlike the other ontologies in this project, LOINC is a clinical and laboratory catalog that mixes several entity types within a flat structure. A standard query returns a mix of complete observations alongside the atomized parts used to build them:
+* **Observations:** The actual clinical concepts or survey questions (e.g., *Pastoral care Hospital Progress note*).
+* **Parts (`LP` codes):** The internal building blocks LOINC uses to construct observations (e.g., the concept of *Pastoral care*).
+* **Answers (`LA` codes):** The allowable multiple-choice strings for survey questions (e.g., *Your religion*).
+* **Lists (`LL` codes):** Groupings of specific answers.
+
+Furthermore, full Observations lack a `broader`/`narrower` taxonomy. Instead, every code is defined by a unique combination of six independent axes (Component, Property, Time, System, Scale, Method).
+
+**Ingestion & SSSOM Strategy:**
+Because LOINC lacks a standard graph structure, we use the FHIR API to search for relevant codes and dynamically synthesize a taxonomy based on the entity type:
+
+1. **FHIR Text-Search Discovery:** We use a predetermined list of root keywords (e.g., *religion, spiritual, chaplain*) to query the `ValueSet/$expand` endpoint, returning a flat list of relevant codes across all entity types.
+2. **Synthetic Hierarchy Categorization:** To satisfy the `Hierarchy_Path` requirement of our schema, the script parses the entity type and builds a structured breadcrumb path. Answers, Parts, and Lists are simply prefixed by their type (e.g., `LOINC Answer > Your religion`). For Observations, the script extracts the survey instrument name (e.g., FACIT, OMAHA) from the metadata and inserts it into the path to group related questions logically. Finally, it uses the "Component" axis as the direct parent grouping (e.g., `LOINC Observation > OMAHA Survey > Spirituality.knowledge > Spirituality Knowledge Community [OMAHA]`).
+3. **FSN Reconstruction:** If the FHIR endpoint fails to return a Fully Specified Name (FSN) for an Observation, the script dynamically rebuilds it by concatenating the 6 extracted axes using the standard LOINC colon format (e.g., `Religion:Type:Pt:^Patient:Nom:Reported`).
+4. **Survey Text Extraction:** Many religion-related LOINC codes represent specific questions on validated clinical intake surveys. The script queries `EXTERNAL_COPYRIGHT_LINK`, `SURVEY_QUEST_SRC`, and `CLASS` to identify the survey instrument. It also queries `SURVEY_QUEST_TEXT` to capture the question wording, appending this context to the `Description` column.
+
+
+### Library of Congress Subject Headings (LCSH)
+
+**Native Architecture:** LCSH is an associative ontology. While it uses SKOS hierarchical relationships (`skos:broader` and `skos:narrower`), it is not built as a taxonomy. Connections between concepts frequently jump across unrelated domains, creating a graph where semantic drift is a notable issue. For example, crawling downward from a broad seed like "Religions" introduces significant drift into other fields.
+
+**Ingestion & SSSOM Strategy:**
+To extract relevant religious groups while avoiding semantic drift, we use bounded target seeds instead of crawling from "Religions":
+
+1. **Targeted Seeds (Strategy B):** Testing revealed that while the ontology as a whole is prone to drift, the "Sects" and "Cults" branches remain conceptually bounded down to their deepest descendants (Level 7). The script queries the REST API and recursively crawls downward along the `skos:narrower` paths for these specific seeds.
+2. **Bottom-Up Ancestry Resolution:** Because the extraction starts mid-tree with targeted seeds, the script reverse-engineers the upper hierarchy. It uses a recursive Python function (`get_full_lcsh_path`) to query the `skos:broader` parent for each term, climbing up to the absolute root of the Library of Congress catalog to construct a complete, contextual breadcrumb path. 
+3. **Crosswalk Extraction:** The Library of Congress links its Subject Headings to external authorities (e.g., matching a subject heading to a Getty AAT concept). The script extracts these links by querying `skos:exactMatch`, `skos:closeMatch`, and `mads:hasCloseExternalAuthority` properties, passing them directly to the `Crosswalks` column for future harmonization.
+
+
+### Systematized Nomenclature of Medicine – Clinical Terms (SNOMED CT)
+
+**Native Architecture:** SNOMED CT is a comprehensive, multilingual clinical healthcare terminology. It is built on Description Logic. Concepts are not merely placed in a taxonomic tree (`Is a` relationships), but are defined by associative relationships. For example, the concept "Roman Catholic, follower of religion" is defined by an `Is a` relationship to "Christian, follower of religion" and an `Interprets` relationship to "Social / personal history observable."
+
+Furthermore, SNOMED enforces a distinction between "Primitive" concepts (which lack sufficient relationships to be automatically classified by a computer) and "Fully Defined" concepts (which are mathematically complete). Many social context concepts regarding religion remain Primitive.
+
+**Ingestion & SSSOM Strategy:**
+Extracting SNOMED CT requires a hybrid API strategy to navigate its scale while preserving its formal logic:
+
+1. **ECL Bulk Discovery:** To avoid crawling the millions of concepts node-by-node, the script uses SNOMED's Expression Constraint Language (ECL) via the FHIR API (`ecl/<<{seed_id}`). This allows the script to request a specific seed (e.g., "Minister of Religion") and return a complete list of all descendant IDs.
+2. **Detailed Node Extraction (Strategy B):** The script iterates through the discovered IDs, querying the Snowstorm Browser API to extract the full JSON metadata payload for each concept. 
+3. **Preserving Description Logic:** To ensure downstream mapping tools understand the semantic weight of the source data, the script extracts SNOMED's `definitionStatus` property and maps it to our W3C `Concept_Type` column (saving concepts as either `owl:Class (Primitive)` or `owl:Class (Fully Defined)`).
+4. **Taxonomic Isolation:** While SNOMED payloads contain associative relationships (e.g., "Finding site", "Interprets"), the script intentionally filters the `relationships` array to extract *only* `typeId: 116680003` ("Is a") relationships. This ensures that the `Parent_IDs` column and the recursive `Hierarchy_Path` accurately reflect the vertical taxonomy without being polluted by lateral clinical attributes.

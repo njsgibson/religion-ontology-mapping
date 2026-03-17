@@ -182,7 +182,8 @@ cython_debug/
 
 # Data management
 data/**/*.csv
+data/**/*.nt
 !**/ .gitkeep
 
-# plans
-plans/**
+# local working files, e.g., AI prompts
+/local/
