@@ -294,3 +294,23 @@ Because of the bifurcated architecture, the pipeline uses two distinct ingestion
 1. **Nested Crawl (Strategy B):** The script scrapes the ARDA Measurements index table to extract the names and IDs (`scid`) of 165 high-level conceptual variables (e.g., "Belief in God", "Christian Nationalism"). It executes a nested crawl to the landing page to extract the conceptual definition, deliberately stopping DOM traversal before extracting the dozens of underlying survey questions attached to the concept.
 2. **Category as Parent:** The table's "Measurement Category" (e.g., "Religious Attitudes") is mapped directly to the `Parent_IDs` column and used to construct the two-tier `Hierarchy_Path`.
 3. **ID Collision Prevention:** To prevent measurement IDs from colliding with US Group or World Tree IDs during consolidation, the pipeline synthesizes these CURIEs by prepending an 'M' (e.g., `ARDA:M27`).
+
+
+### Database of Religious History (DRH)
+
+**Native Architecture:** The DRH is an expert-curated encyclopedia of religious groups, places, and texts. Its primary structural taxonomy (the "Tagging Trees") and survey instruments ("Polls") are not published as static HTML or a traditional REST API. Instead, the DRH is a modern Single Page Application (SPA) driven by a GraphQL backend (`v1/graphql`).
+
+**Ingestion & SSSOM Strategy:**
+To bypass the frontend React application, the pipeline talks directly to the hidden GraphQL API in two parts.
+
+**Part A: Tagging Trees**
+1. **Targeted GraphQL Extraction (Strategy B):** The script executes a single HTTP POST request containing a GraphQL query specifically designed to extract the entire `polls_entrytaggroup` schema in one payload. This exposes several tagging trees utilized by the backend that are not natively visible on the public browsing frontend.
+2. **Scoping Filter:** The script dynamically filters the API response to include explicitly targeted semantic concepts (e.g., "Religious Group", "Religious Text") while dropping instance trees (e.g., "Religious Place") or out-of-scope trees (e.g., "Language").
+3. **In-Memory Graph Construction:** The JSON response is flattened into a local dictionary. The script uses the `parent_tag_id` attribute to mathematically construct the absolute breadcrumb trail (`Hierarchy_Path`), automatically deduplicating root nodes to prevent visual stuttering (e.g., preventing `Religious Group > Religious Group`). Test data and localized branches (e.g., `(fr)`, `(ja)`) are intentionally retained for downstream cleaning.
+4. **Identifier Management (No LOD):** Because the DRH taxonomy is not natively published as Linked Open Data, the `URI` column is intentionally left blank. Primary keys are synthesized into stable CURIEs using the DRH's internal database integers (e.g., `DRH:728`).
+
+**Part B: Polls**
+1. **Targeted GraphQL Extraction:** The DRH structures its variables inside "Polls". The script executes a targeted GraphQL query to fetch the nested structure of Poll 43 ("Religious Group v6"), explicitly scoping the extraction to the "Beliefs" and "Practices" categories.
+2. **Relational Deduplication:** The API returns a dual-layered schema where questions exist both in flat categorical lists and inside nested structural groups. The script prioritizes extracting the grouped paths to maximize hierarchical context (e.g., `Beliefs > Burial and Afterlife > Belief in afterlife`) and uses a client-side tracker to safely ignore the flat duplicates.
+3. **ID Namespace Segregation:** To prevent integer collisions between the Tagging Trees and the Polls, Poll IDs are strictly namespaced with prefixes (`PC` for Categories, `PG` for Groups, and `P` for Questions).
+4. **Question Normalization:** The raw text of the survey question is mapped to the `Description` column to preserve exact instrument wording. The `Primary_Label` applies regex (`re.sub(r'[:\-\s]+$', '', text)`) to strip punctuation and construct a clean conceptual label.

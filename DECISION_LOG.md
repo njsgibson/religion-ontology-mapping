@@ -65,3 +65,13 @@
 * **Context:** ARDA's website maintains two distinct databases (US Religious Groups and World Religion Family Trees) that utilize overlapping integer sequences for their internal IDs (e.g., both databases might have a group with ID "12").
 * **Decision:** When synthesizing CURIEs for the World Religion dataset, the script explicitly prepends a 'W' to the local ID (e.g., `ARDA:W12` instead of `ARDA:12`).
 * **Reasoning:** This ensures absolute uniqueness within the `ARDA` namespace and prevents catastrophic ID collisions during the Phase 2 deduplication and consolidation processes.
+
+### 2026-03-17: Handling Relational Duplication in GraphQL Responses
+* **Context:** During the DRH Poll ingestion, the GraphQL API returned questions in a dual-layered format: once as a flat list under the Category, and again nested deeply inside Groups.
+* **Decision:** The pipeline logic prioritizes the deepest hierarchical nesting (the Group path) and uses a client-side tracking set (`processed_questions`) to actively ignore the flat categorical duplicates.
+* **Reasoning:** Prioritizing the grouped structure preserves the richest possible contextual `Hierarchy_Path` (e.g., `Beliefs > Burial and Afterlife > Belief in afterlife`).
+
+### 2026-03-17: Branching Survey Logic and Sub-Questions
+* **Context:** The DRH Polls use branching survey logic, where affirmative answers to primary questions unlock conditional sub-questions (e.g., Answering "Yes" to "Constraints on sexual activity" unlocks "Monogamy" or "Castration"). 
+* **Decision:** Conditional sub-questions are intentionally excluded from becoming their own standalone rows in the Bronze Layer. Instead, they are bundled into a single string and appended to the `Description` of their parent question.
+* **Reasoning:** In a structural ontology, sub-questions are qualifiers of the primary concept rather than independent concepts. Bundling them provides rich semantic context for the primary concept while preventing the CSV from being cluttered with orphaned, highly specific survey conditionals.
