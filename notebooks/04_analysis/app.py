@@ -104,7 +104,7 @@ df = load_data()
 
 # --- Sidebar Navigation ---
 st.sidebar.header("Navigation")
-page = st.sidebar.radio("Go to", ["Concept Explorer", "Concept Frequency", "Source Explorer", "Documentation"])
+page = st.sidebar.radio("Go to", ["Concept Explorer", "Concept Frequency", "Source Explorer", "Dataset Overview", "Documentation"])
 
 # --- Project Metadata (Sidebar Bottom) ---
 st.sidebar.divider()
@@ -681,6 +681,106 @@ elif page == "Source Explorer":
                             st.plotly_chart(fig, width="stretch", theme="streamlit")
             else:
                 st.info("Select a concept from the navigation panel to view its full details.")
+
+elif page == "Dataset Overview":
+    st.header("Dataset Overview")
+    st.markdown("This table displays the distribution and volume of religion-related concepts across the source ontologies and working categories.")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- Generate Cross-Tabulation ---
+    df_desc = df.copy()
+    
+    # Clean category names (handle empty strings that were filled with "")
+    df_desc['working_category'] = df_desc['working_category'].replace("", "Uncategorized").astype(str).str.strip().str.lower()
+    
+    volume_matrix = pd.crosstab(
+        index=df_desc['Source_System'], 
+        columns=df_desc['working_category'], 
+        margins=True, 
+        margins_name='Total'
+    ).fillna(0).astype(int)
+
+    # --- Custom Sorting ---
+    # Sort ROWS alphabetically, then push 'Total' to the bottom
+    volume_matrix = volume_matrix.sort_index()
+    if 'Total' in volume_matrix.index:
+        total_row = volume_matrix.loc[['Total']]
+        volume_matrix = pd.concat([volume_matrix.drop('Total'), total_row])
+
+    # Sort COLUMNS alphabetically, push 'non-religious' and 'Total' to the far right
+    cols = [c for c in volume_matrix.columns if c not in ['Total', 'non-religious']]
+    cols.sort()
+
+    if 'non-religious' in volume_matrix.columns:
+        cols.append('non-religious')
+    if 'Total' in volume_matrix.columns:
+        cols.append('Total')
+
+    volume_matrix = volume_matrix[cols]
+
+    # --- Elegant HTML Rendering ---
+    html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">'
+    
+    # Headers
+    html += '<thead><tr style="border-bottom: 2px solid rgba(128,128,128,0.5);">'
+    html += '<th style="text-align: left; padding: 10px; color: #a0a0a0; font-weight: 600;">Source System</th>'
+    
+    for col in volume_matrix.columns:
+        is_total_col = (col == 'Total')
+        header_text = 'total' if is_total_col else col
+        
+        # Right-justify with a 25px right padding to line up numbers perfectly
+        if is_total_col:
+            # Make the total column slightly wider and give it a faint left border
+            th_style = "text-align: right; padding: 10px 25px 10px 10px; color: #a0a0a0; font-weight: 600; width: 110px; border-left: 1px solid rgba(128,128,128,0.2); background-color: rgba(255, 255, 255, 0.02);"
+        else:
+            th_style = "text-align: right; padding: 10px 25px 10px 10px; color: #a0a0a0; font-weight: 600;"
+            
+        html += f'<th style="{th_style}">{header_text}</th>'
+    html += '</tr></thead>'
+    
+    # Body
+    html += '<tbody>'
+    for idx, row in volume_matrix.iterrows():
+        is_total_row = (idx == 'Total')
+        
+        # Styling for the Total row vs standard rows
+        if is_total_row:
+            row_style = 'border-top: 2px solid rgba(128,128,128,0.5); font-weight: bold; background-color: rgba(255, 255, 255, 0.05);'
+            idx_text = 'total'
+        else:
+            row_style = 'border-bottom: 1px solid rgba(128,128,128,0.2);'
+            idx_text = idx
+            
+        html += f'<tr style="{row_style}">'
+        
+        # Row Index (Source Name)
+        idx_style = 'font-weight: bold; color: white;' if is_total_row else 'color: #e0e0e0;'
+        html += f'<td style="text-align: left; padding: 10px; {idx_style}">{idx_text}</td>'
+        
+        # Values
+        for col_name, val in row.items():
+            is_total_col = (col_name == 'Total')
+            cell_weight = 'bold' if (is_total_col or is_total_row) else 'normal'
+            
+            # Comma formatting for thousands, subtle dashes for zero
+            if val > 0:
+                val_str = f"{val:,}"
+            else:
+                val_str = "<span style='color: #666666;'>-</span>"
+                
+            if is_total_col:
+                td_style = f"text-align: right; padding: 10px 25px 10px 10px; font-weight: {cell_weight}; border-left: 1px solid rgba(128,128,128,0.2); background-color: rgba(255, 255, 255, 0.02);"
+            else:
+                td_style = f"text-align: right; padding: 10px 25px 10px 10px; font-weight: {cell_weight};"
+                
+            html += f'<td style="{td_style}">{val_str}</td>'
+            
+        html += '</tr>'
+    html += '</tbody></table>'
+
+    st.markdown(html, unsafe_allow_html=True)
 
 elif page == "Documentation":
     st.header("Project Documentation")
