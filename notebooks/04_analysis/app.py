@@ -115,8 +115,8 @@ st.sidebar.markdown("[ARDA](https://www.thearda.com/)")
 
 with st.sidebar.expander("License"):
     st.write("""
-    **License:** Distributed under the MIT License. 
-    **Data Sovereignty:** Concept metadata remains the property of the originating authorities (see Source Registry).
+    **License:** Distributed under the MIT License.
+    **Data Sovereignty:** Concept metadata remains the property of the originating authorities.
     """)
 
 # --- Page Routing ---
@@ -743,7 +743,7 @@ elif page == "Documentation":
     #### 1. Concept Explorer 
     This allows you to search for and inspect concepts from across these ontologies. 
     * **multi-field search:** Query any or all of the `Primary_Label` (by default), `Synonyms`, `Description`, or `Formal_Label` to find concepts that might use different primary terminology in different disciplines. The table will filter immediately as you type into it.
-    * **interactive results:** The filtered dataset includes URIs (where available) that you can click on to visit the source authority's webpage for any given concept.
+    * **interactive results:** The filtered dataset includes URIs (where available) that you can click on to visit the source authority's webpage for any given concept. Interact with the table settings (hover over the top right corner of the table) to change what columns are visible or to download as a CSV whatever is in view in the table.
     
     #### 2. Concept Frequency
     This tool allows you to explore which terms are most salient within a chosen category. It does not look at the formal logical mapping; instead, it uses a Natural Language Processing (NLP) pipeline to analyze the linguistic patterns of the concepts' Primary_Labels.
@@ -770,7 +770,7 @@ elif page == "Documentation":
     
     * **Principal Developer:** Nicholas J. S. Gibson, ResearchWell LLC
     * **Technical Stack:** Python, Pandas, Streamlit, and Gemini LLM
-    * **Citation:** Gibson, N. J. S. (2006). Religion Ontology Mapping Framework [Computer software]. GitHub. https://github.com/njsgibson/religion-ontology-mapping
+    * **Citation:** Gibson, N. J. S. (2006). Religion Ontology Explorer [computer software]. https://religion-ontology-explorer.streamlit.app/
 
     For inquiries regarding the mapping methodology or to suggest new data sources, please email nicholas@researchwell.org.
     """)
