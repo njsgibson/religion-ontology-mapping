@@ -181,11 +181,12 @@ cython_debug/
 .cursorindexingignore
 
 # Data management
-data/**/*.csv
-data/**/*.nt
-data/**/*.xlsx
+data/raw/*
+data/interim/*
+data/external/*
+data/processed/*
+!data/processed/ontology_app_dataset.csv
 !**/ .gitkeep
-!data/processed/
 
 # local working files, e.g., AI prompts
 /local/
