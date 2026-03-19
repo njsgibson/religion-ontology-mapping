@@ -1,5 +1,4 @@
 # Methodology
-*Note: This document currently covers Phase 1 of the project (Ingestion). Methods for subsequent phases will be appended as the project evolves.*
 
 ## Source Discovery and Ingestion
 

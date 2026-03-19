@@ -1,0 +1,8 @@
+pandas
+requests
+google-genai
+python-dotenv
+streamlit
+streamlit-keyup
+nltk
+plotly

@@ -185,6 +185,7 @@ data/**/*.csv
 data/**/*.nt
 data/**/*.xlsx
 !**/ .gitkeep
+!data/processed/
 
 # local working files, e.g., AI prompts
 /local/

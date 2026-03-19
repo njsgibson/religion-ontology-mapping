@@ -19,32 +19,36 @@ The integrated dataset is engineered to explicitly support several future use ca
 
 ## 3. Project Scope & Definitions
 For the purposes of this project, **"religion-related concepts"** include, but are not limited to:
-* **traditions and worldviews:** e.g., Anglican, Buddhist, atheism
-* **practices:** e.g., prayer, Lectio Divina, service attendance, spiritual healing
-* **beliefs:** e.g., beliefs about God, souls, afterlife
-* **roles:** e.g., priest, imam, chaplain, shaman
-* **infrastructure, institutions, and communities:** e.g., temple, mosque, chapel, congregation, prayer group
+* **identities**: The name of a world religion, faith tradition, denominations, sects, cults, spiritual movements, or worldviews (e.g., Christianity, Anglican, Buddhist, Sunni, atheism).
+* **beliefs**: Religious or spiritual beliefs, doctrines, theological concepts, or objects of religious or spiritual beliefs such as supernatural beings or entities (e.g., beliefs about God, souls, afterlife, salvation).
+* **practices**: Religious or spiritual practices, rituals, activities, or behaviors (e.g., prayer, baptism, worship, service attendance, fasting, spiritual healing).
+* **occupations**: Religious or spiritual occupations, roles, or people (e.g., clergy, priest, imam, chaplain, shaman, monk).
+* **buildings**: Religious or spiritual buildings, physical structures, or infrastructure (e.g., church, temple, mosque, chapel, shrine).
+* **communities**: Religious or spiritual social structures, organizations, groups, or administrative bodies (e.g., congregation, parish, prayer group, diocese).
+* **material**: Religion-related or spirituality-related material concepts, physical objects, texts, or articles (e.g., Bible, font, vestment, rosary, prayer beads).
+* **religious other**: Religion-related concepts that do not fit one of the categories above.
+* **non-religious**: Concepts that are unrelated to religion and that therefore do not fit any other category.
 
-## 4. Current Project Status: Phase 1 & 2 (Ingestion & Processing)
-The project is currently focused on harvesting, normalizing, aggregating, and categorizing concept metadata from primary authorities into a centralized standard schema. 
+## 4. Current Project Status: Ingestion, Processing, and Analysis (Phases 1, 2, & 4)
+The data engineering pipeline (harvesting, normalizing, aggregating, and categorizing concept metadata) is established. The project has now expanded into Phase 4 (Analysis), featuring an interactive Streamlit web application that allows social scientists to explore the data that has been ingested and processed so far. 
 
 To ensure downstream machine-readability, the pipeline extracts structural metadata using **W3C Representational Semantics** (e.g., `skos:Concept`, `owl:Class`), capturing the exact representational nature of the source data. Following ingestion, concepts are assigned to a top-level sociological category (e.g., beliefs, practices, identities) using an incremental zero-shot LLM pipeline, which is then strictly verified via a human-in-the-loop audit protocol.
 
 **Active Conceptual Data Sources:**
-* **AAT** (Getty Art & Architecture Thesaurus)
-* **ELSST** (European Language Social Science Thesaurus)
-* **HL7** (Health Level Seven International - v2 & v3)
-* **LCDGT** (Library of Congress Demographic Group Terms)
-* **LCSH** (Library of Congress Subject Headings)
-* **LOINC** (Logical Observation Identifiers Names and Codes)
-* **SNOMED CT** (Systematized Nomenclature of Medicine - Clinical Terms)
-* **TGM** (Thesaurus for Graphic Materials)
-* **AFSET** (American Folklore Society Ethnographic Terms)
-* **MeSH** (Medical Subject Headings)
-* **ASCRG** (Australian Standard Classification of Religious Groups)
-* **ONS** (Office for National Statistics - UK Census 2021)
-* **DRH** (Database of Religious History)
-* **ARDA** (Association of Religion Data Archives)
+* **AAT** -- Getty Art & Architecture Thesaurus
+* **ELSST** -- European Language Social Science Thesaurus
+* **HL7** -- Health Level Seven International (v2 & v3)
+* **LCDGT** -- Library of Congress Demographic Group Terms
+* **LCSH** -- Library of Congress Subject Headings
+* **LOINC** -- Logical Observation Identifiers Names and Codes
+* **SNOMED CT** -- Systematized Nomenclature of Medicine - Clinical Terms
+* **TGM** -- Thesaurus for Graphic Materials
+* **AFSET** -- American Folklore Society Ethnographic Terms
+* **MeSH** -- Medical Subject Headings
+* **ASCRG** -- Australian Standard Classification of Religious Groups
+* **ONS** -- Office for National Statistics - UK Census 2021
+* **DRH** -- Database of Religious History
+* **ARDA** -- Association of Religion Data Archives
 
 ## 5. Pipeline Architecture
 All source data is processed through a decoupled, 4-step Medallion-style architecture:
@@ -71,7 +75,7 @@ The repository is structured to cleanly separate configuration, ingestion logic,
     * `01_ingestion/`: API web scrapers and recursive crawlers for each active data source.
     * `02_processing/`: Scripts for data consolidation (`01_consolidate_master.ipynb`), AI categorization (`02_categorize_concepts.ipynb`), and final dataset generation (`03_build_application_dataset.ipynb`).
     * `03_mapping/`: *(Upcoming)* Core logic for semantic alignment.
-    * `04_analysis/`: *(Upcoming)* Data profiling and downstream web applications.
+    * `04_analysis/`: Contains the Streamlit web application (`app.py`) for interactive data exploration.
 * `data/`
     * `raw/`: Isolated, source-specific CSVs output directly from the ingestion scripts.
     * `interim/`: The processing workbench. Contains consolidated master files, AI output logs, and human-audited Excel files.
@@ -90,6 +94,10 @@ The repository is structured to cleanly separate configuration, ingestion logic,
     * Fill in your `CONTACT_EMAIL` to ensure polite API scraping.
     * Provide a `GEMINI_API_KEY` to run the categorization pipeline.
     * **LOINC requires authentication.** Register for a free account at loinc.org and add `LOINC_USERNAME` and `LOINC_PASSWORD`.
-2.  **Dependencies:** Ensure you have `pandas`, `requests`, `google-genai`, and `python-dotenv` installed (`pip install -r requirements.txt`).
+2.  **Dependencies:** Ensure your virtual environment is active and install the required packages (`pip install -r requirements.txt`). Core pipeline libraries include `pandas`, `requests`, `google-genai`, and `python-dotenv`. Core application libraries include `streamlit`, `streamlit-keyup`, `nltk`, and `plotly`.
 3.  **VS Code / Pylance Users:** To resolve local import warnings, ensure the `.vscode/settings.json` file is configured to use the root `.env` file, which sets `PYTHONPATH=./config`.
-4.  **Data Sovereignty:** The `data/` directory contents are strictly managed locally via `.gitignore` to respect the licensing constraints of the source authorities.
+4.  **Data Sovereignty:** The `data/` directory contents are managed locally via `.gitignore` to respect the licensing constraints of the source authorities. Only the processed application-ready dataset (`ontology_app_dataset.csv`) is tracked and exposed for reuse.
+5.  **Running the Web Application:** To launch the local Streamlit explorer, execute the following command from the root directory:
+    ```bash
+    streamlit run notebooks/04_analysis/app.py
+    ```
