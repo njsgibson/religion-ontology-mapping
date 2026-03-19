@@ -99,6 +99,54 @@ Finally, we ensure that the raw extraction matches successfully maps to our stan
 * Consider whether we are losing core structural or semantic relationships (e.g., specific W3C logic types or complex polyhierarchy) simply because there is no corresponding location for this information in our standardized schema.
 * If our source contains an important, widely applicable data point that our schema cannot accommodate, document the conflict in the decision log. Evaluate whether to update the central schema globally to accommodate this new data type, or accept the localized data loss in the interest of cross-source standardization.
 
+### 7. Source Consolidation and Quality Assurance
+Once raw extraction is complete, the decentralized Bronze-layer CSVs (`data/raw/`) must be aggregated into a single Silver-layer master dataset (`data/interim/master_ontology_dataset.csv`). 
+
+To ensure downstream data integrity and prevent "whack-a-mole" debugging, the consolidation script operates as a strict gatekeeper. It evaluates all raw files and halts the generation of the master file if any of the following QA gates fail, exporting specific error logs to `data/interim/logs/` for manual resolution:
+
+1. **Schema Compliance Check:** Verifies that every raw file perfectly matches the standard 15-column schema defined in `config/ingest_schema_manager.py`. Files with missing or extra columns are rejected.
+2. **Null Primary Key Check:** Identifies and rejects any rows missing a `CURIE`, as these are required for downstream SSSOM mapping and deduplication.
+3. **Exact Row Duplication:** Flags completely identical rows (often caused by overlapping API extraction seeds).
+4. **CURIE Collisions:** Flags instances where two rows possess the exact same `CURIE` but contain conflicting metadata (e.g., differing labels or parent IDs). This prevents distinct concepts from being silently merged or overwritten.
+
+
+
+## Categorization
+
+To facilitate high-level macro-analysis (e.g., comparing how different ontologies handle "practices" versus "beliefs"), all ingested concepts are assigned a top-level sociological category. Because manual categorization of thousands of concepts is prohibitively slow, we use a hybrid Machine Learning and Data Engineering pipeline.
+
+### 1. AI- and Human-in-the-Loop Categorization
+
+**Zero-Shot LLM Classification**
+The pipeline uses a Large Language Model (Gemini 2.5 Flash) to perform zero-shot classification on the consolidated master dataset. 
+* **Strict JSON Schema Enforcement:** To ensure machine-readability, the API is constrained to output a strict JSON array containing only the `CURIE`, the predicted `category`, and a `confidence` score. The model is forced to choose from an exact list of categories defined centrally in `config/categories.json`.
+* **Incremental Batching:** To minimize API costs and protect previously audited data, the script is state-aware. It cross-references the master dataset against the existing `data/interim/category_mapping_ai.csv` file, exclusively passing net-new or previously failed concepts to the API.
+* **Resilience and Fallback:** The script processes concepts in small batches (e.g., 50 rows). If the API drops the connection or times out, the script flags those rows as `Failed` and continues, automatically retrying them on the next execution.
+
+**Automated Integrity Diagnostics**
+Because LLMs are non-deterministic, the pipeline executes a strict mathematical diagnostic report immediately after classification and before human review:
+* **Completeness:** Verifies that no concepts were dropped by the API.
+* **Text Fidelity:** Verifies that the LLM did not "hallucinate" or subtly alter the `Primary_Label`, `Source_System`, or `Hierarchy_Path` during processing. 
+
+**Manual Auditing Protocol (Excel)**
+Because LLMs can be highly confident but contextually incorrect (miscalibration), the AI output is treated as untrusted scaffolding. It is subjected to a strict manual audit to establish the final, single source of truth for future application.
+
+To ensure data integrity and prevent auto-formatting corruption of ID strings or confidence scores, all manual reviews of the AI categorization must follow this import workflow:
+
+1. **Generate Output:** Run the AI Categorization and Cleanup scripts to generate the latest mapping file.
+2. **Safe Import:** Open a blank Excel workbook. Navigate to **Data > Get Data > From File > From Text/CSV** to import the `category_mapping_ai.csv` file from the `data/interim/` directory.
+3. **Enforce Data Types:** In the preview window, click **Transform Data** to open the Power Query editor. 
+   - Explicitly set the `CURIE` column data type to **Text**.
+   - Explicitly set the `confidence` column data type to **Decimal Number**.
+   - Click **Close & Load**.
+4. **Prepare Review Column:** Add a new column named `category_human` to the loaded table. Copy all the existing content of `category` to that column. Create a data validation rule so that only legitimate categories are permitted in that column.
+5. **Manual Audit:** Use any reasonable approach to review AI-provided data in the `category` column. For example: sort by `hierarchy_path`, then filter to select a single `Source`, then filter by each `Category` available for that source in turn. Update the content in the `category_human` column as necessary to reflect the semantic intent of each concept within its source ontology.
+6. **Save State:** Save the file as an Excel Workbook (`.xlsx`) in the `data/interim/` folder (e.g., `human_category_review.xlsx`) so your formatting and filters are preserved for future sessions.
+
+**Final Dataset Generation**
+The final application dataset (`data/processed/ontology_app_dataset.csv`) is generated by mathematically merging the human-audited Excel file back onto the master metadata. The intermediate AI predictions and confidence scores are intentionally dropped, and a `review_status` flag (e.g., `Human Reviewed`, `Pending API`) is appended to track the data lifecycle of new concepts.
+
+
 
 ## Source Ontology Profiles
 

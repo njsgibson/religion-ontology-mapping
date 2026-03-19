@@ -25,10 +25,10 @@ For the purposes of this project, **"religion-related concepts"** include, but a
 * **roles:** e.g., priest, imam, chaplain, shaman
 * **infrastructure, institutions, and communities:** e.g., temple, mosque, chapel, congregation, prayer group
 
-## 4. Current Project Status: Phase 1 & 2 (Ingestion & Consolidation)
-The project is currently focused on harvesting, normalizing, and aggregating concept metadata from primary authorities into a centralized standard schema. 
+## 4. Current Project Status: Phase 1 & 2 (Ingestion & Processing)
+The project is currently focused on harvesting, normalizing, aggregating, and categorizing concept metadata from primary authorities into a centralized standard schema. 
 
-To ensure downstream machine-readability, the pipeline extracts structural metadata (the `Concept_Type` column) using **W3C Representational Semantics** (e.g., `skos:Concept`, `owl:Class`, `owl:Property`, `skos:Collection`), capturing the exact representational nature of the source data without assuming future use cases.
+To ensure downstream machine-readability, the pipeline extracts structural metadata using **W3C Representational Semantics** (e.g., `skos:Concept`, `owl:Class`), capturing the exact representational nature of the source data. Following ingestion, concepts are assigned to a top-level sociological category (e.g., beliefs, practices, identities) using an incremental zero-shot LLM pipeline, which is then strictly verified via a human-in-the-loop audit protocol.
 
 **Active Conceptual Data Sources:**
 * **AAT** (Getty Art & Architecture Thesaurus)
@@ -39,26 +39,27 @@ To ensure downstream machine-readability, the pipeline extracts structural metad
 * **LOINC** (Logical Observation Identifiers Names and Codes)
 * **SNOMED CT** (Systematized Nomenclature of Medicine - Clinical Terms)
 * **TGM** (Thesaurus for Graphic Materials)
-* **AFSET**
-* **MeSH***
+* **AFSET** (American Folklore Society Ethnographic Terms)
+* **MeSH** (Medical Subject Headings)
 * **ASCRG** (Australian Standard Classification of Religious Groups)
 * **ONS** (Office for National Statistics - UK Census 2021)
 * **DRH** (Database of Religious History)
+* **ARDA** (Association of Religion Data Archives)
 
 ## 5. Pipeline Architecture
-All source data is processed through a decoupled, 3-step Medallion-style architecture:
+All source data is processed through a decoupled, 4-step Medallion-style architecture:
 
-1.  **Centralized Configuration:** All scripts dynamically read from a master `config/source_registry.csv`. A central Python module (`config/ingest_schema_manager.py`) strictly enforces the **15-column output format**, which includes `Crosswalks` to capture native external mappings.
-2.  **Raw Extraction (Bronze):** Individual ingestion scripts query source APIs, trace hierarchical paths, and write standard metadata to isolated raw files (e.g., `data/raw/raw_elsst.csv`). 
-    * *Representational Semantics:* Extracts structural metadata (the `Concept_Type` column) using W3C standard semantics (e.g., `skos:Concept`, `owl:Class`).
-    * *Smart Caching:* High-latency APIs use a "Smart Resume" client-side cache to prevent data loss during long iterative crawls.
+1.  **Centralized Configuration:** All extraction scripts dynamically read from a master `config/source_registry.csv`. A central Python module (`config/ingest_schema_manager.py`) strictly enforces the **15-column output format**, which includes `Crosswalks` to capture native external mappings.
+2.  **Raw Extraction (Bronze / data/raw):** Individual ingestion scripts query source APIs, trace hierarchical paths, and write standard metadata to isolated raw files (e.g., `data/raw/raw_elsst.csv`). 
+    * *Smart Caching:* High-latency APIs use client-side caching to prevent data loss.
     * *Polyhierarchy Handling:* Extracts a single "Preferred Path" for human-readable visual breadcrumbs, while preserving full graph logic via pipe-separated IDs in the `Parent_IDs` column.
-    * *Flattening over Graphing:* To support SSSOM tabular mapping, we intentionally drop internal lateral/associative edges (e.g., `skos:related`) during extraction. Reconstructing native graphs works against our goal of a unified, searchable format.
-3.  **Consolidation & QA (Silver):** A dedicated processing script vacuums up all `raw_*.csv` files, runs quality assurance checks, deduplicates based on URI, and exports the final `master_ontology_dataset.csv`.
+    * *Flattening over Graphing:* Internal lateral edges (e.g., `skos:related`) are intentionally dropped during extraction to support future tabular SSSOM mapping.
+3.  **Consolidation & Categorization (Silver / data/interim):** A dedicated script vacuums up all raw files, runs QA checks, and generates a master dataset. An incremental batching script then queries the Gemini API to perform zero-shot classification against the core concepts, drawing its target definitions centrally from `config/categories.json`. The raw AI output is strictly audited by a human via Excel to enforce semantic accuracy.
+4.  **Finalization (Gold / data/processed):** The human-audited categories are merged back onto the pristine master metadata, and data lifecycle flags (`review_status`) are appended to generate the final, app-ready dataset.
 
 ## 6. Documentation Strategy
 Further project documentation can be found in the following locations:
-1.  **`METHODOLOGY.md`:** Describes approach to identifying and ingesting data from source ontologies, including algorithmic rules for handling complex architectures.
+1.  **`METHODOLOGY.md`:** Describes the approach to identifying, ingesting, and categorizing data, including algorithmic rules for handling complex architectures and the manual audit protocol.
 2.  **`source_registry.csv`:** A static metadata registry containing base URIs, formal source names, and licensing information for all active ontologies.
 3.  **`DECISION_LOG.md`:** An append-only diary logging major architectural decisions (e.g., intentional data dropping, schema evolution limits).
 4.  **Self-documenting code:** Extraction logic, API pacing, and edge-case handling are heavily commented directly within the respective Jupyter notebooks.
@@ -68,16 +69,18 @@ The repository is structured to cleanly separate configuration, ingestion logic,
 
 * `notebooks/`
     * `01_ingestion/`: API web scrapers and recursive crawlers for each active data source.
-    * `02_processing/`: Scripts for data consolidation (`01_consolidate_master.ipynb`) and *(upcoming)* cross-source conflict resolution.
+    * `02_processing/`: Scripts for data consolidation (`01_consolidate_master.ipynb`), AI categorization (`02_categorize_concepts.ipynb`), and final dataset generation (`03_build_application_dataset.ipynb`).
     * `03_mapping/`: *(Upcoming)* Core logic for semantic alignment.
-    * `04_analysis/`: *(Upcoming)* Data profiling and distribution visualizations.
+    * `04_analysis/`: *(Upcoming)* Data profiling and downstream web applications.
 * `data/`
     * `raw/`: Isolated, source-specific CSVs output directly from the ingestion scripts.
-    * `processed/`: Consolidated, deduplicated `master_ontology_dataset.csv`.
+    * `interim/`: The processing workbench. Contains consolidated master files, AI output logs, and human-audited Excel files.
+    * `processed/`: The final, app-ready `ontology_app_dataset.csv`.
 * `config/`
     * `ingest_schema_manager.py`: Master Python class enforcing column alignment and registry lookups.
     * `data_dictionary.csv`: Definitions of standard schema for ingested data.
     * `source_registry.csv`: Active CURIE-to-URI resolution table and license information.
+    * `categories.json`: The authoritative taxonomy and definitions used for categorization.
     * `.env.example`: Template for local environment variables.
 * `DECISION_LOG.md`: Chronological log of architectural definitions and scoping rules.
 * `ingestion_tracker.csv`: Log of progress in developing ingestion scripts.
@@ -85,7 +88,8 @@ The repository is structured to cleanly separate configuration, ingestion logic,
 ## 8. Technical Setup
 1.  **Environment Variables:** Copy `config/.env.example` to `config/.env`. 
     * Fill in your `CONTACT_EMAIL` to ensure polite API scraping.
-    * **LOINC requires authentication.** You must register for a free account at loinc.org and add `LOINC_USERNAME` and `LOINC_PASSWORD` to your `.env` file to run the LOINC ingest script.
-2.  **Dependencies:** Ensure you have `pandas`, `requests`, and `python-dotenv` installed (`pip install -r requirements.txt`).
+    * Provide a `GEMINI_API_KEY` to run the categorization pipeline.
+    * **LOINC requires authentication.** Register for a free account at loinc.org and add `LOINC_USERNAME` and `LOINC_PASSWORD`.
+2.  **Dependencies:** Ensure you have `pandas`, `requests`, `google-genai`, and `python-dotenv` installed (`pip install -r requirements.txt`).
 3.  **VS Code / Pylance Users:** To resolve local import warnings, ensure the `.vscode/settings.json` file is configured to use the root `.env` file, which sets `PYTHONPATH=./config`.
 4.  **Data Sovereignty:** The `data/` directory contents are strictly managed locally via `.gitignore` to respect the licensing constraints of the source authorities.

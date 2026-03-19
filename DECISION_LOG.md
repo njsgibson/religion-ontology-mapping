@@ -75,3 +75,23 @@
 * **Context:** The DRH Polls use branching survey logic, where affirmative answers to primary questions unlock conditional sub-questions (e.g., Answering "Yes" to "Constraints on sexual activity" unlocks "Monogamy" or "Castration"). 
 * **Decision:** Conditional sub-questions are intentionally excluded from becoming their own standalone rows in the Bronze Layer. Instead, they are bundled into a single string and appended to the `Description` of their parent question.
 * **Reasoning:** In a structural ontology, sub-questions are qualifiers of the primary concept rather than independent concepts. Bundling them provides rich semantic context for the primary concept while preventing the CSV from being cluttered with orphaned, highly specific survey conditionals.
+
+### 2026-03-18: Implementation of an 'Interim' Data Layer
+* **Context:** The `data/processed/` directory was becoming cluttered. It was acting as both a temporary workbench for mapping files and the final destination for app-ready data, which blurred the lines of data lineage.
+* **Decision:** Adopted a stricter, Medallion-style folder hierarchy: `raw/`, `interim/`, and `processed/`.
+* **Reasoning:**  This physically isolates in-progress AI categorizations, error logs, and human-review workbenches into the `interim/` folder. It guarantees that the `processed/` folder only ever contains the finalized, clean dataset ready for downstream applications.
+
+### 2026-03-18: Incremental LLM Categorization
+* **Context:** Processing the entire 8,000+ row dataset through the Gemini API for every new batch of ingested data is costly, time-consuming, and runs the risk of accidentally overwriting previous human corrections.
+* **Decision:** Implemented an incremental queue for the zero-shot LLM classification script. The pipeline now cross-references `master_ontology_dataset.csv` against `category_mapping_ai.csv` and only sends net-new or previously failed concepts to the API.
+* **Reasoning:** This minimizes API calls, avoids redundant processing, and permanently protects human-audited categories from being overwritten by subsequent AI runs.
+
+### 2026-03-18: Excel Power Query Enforcement for Auditing
+* **Context:** Opening intermediate CSV files directly in Excel corrupted the data. Excel's auto-formatting heuristics converted CURIE strings (e.g., `AAT:300404244`) into scientific notation and rounded decimal confidence scores to integers.
+* **Decision:** Established a strict manual protocol requiring all human audits to import data via Excel's "Get Data" (Power Query) workflow.
+* **Reasoning:** Power Query allows the user to explicitly force the `CURIE` column to a Text format and the `confidence` column to a Decimal format before the data loads into the spreadsheet, preventing silent data corruption.
+
+### 2026-03-18: Dropping AI Metadata in Final Merge
+* **Context:** Passing the AI's raw `category` and `confidence` scores into the final application dataset alongside the human-audited `final_category` created confusion regarding which column represented the single source of truth.
+* **Decision:** The final dataset generation script (`03_build_final_dataset.ipynb`) explicitly drops the intermediate AI columns, appending only the authoritative `final_category` and a `review_status` lifecycle flag.
+* **Reasoning:** Downstream web applications and end-users should only interact with the finalized, human-verified data. Dropping the intermediate columns keeps the schema clean and prevents accidental reliance on unverified AI predictions.

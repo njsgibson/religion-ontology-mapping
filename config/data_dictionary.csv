@@ -1,16 +1,18 @@
-Column_Name,Data_Type,Permissible_Values,Definition,Examples
-Source_System,String,,The human-readable name of the originating ontology or database.,SNOMED CT | LOINC
-Primary_Label,String,,The preferred human-readable display name of the concept in English.,Pastoral care Hospital Progress note
-CURIE,String,,Compact URI formatted strictly as PREFIX:ID. Prefix must exist in source_registry.csv.,SNOMED:105390002
-Formal_Label,String,,The logically constructed Fully Specified Name (FSN). Mirrors Primary_Label if none exists.,Religious affiliation (observable entity)
-Concept_Type,Categorical String,"skos:Concept | owl:Class (Primitive) | owl:Class (Fully Defined) | owl:Property | skos:Collection",The W3C Representational Semantics defining the structural role of the node.,skos:Concept
-Hierarchy_Path,String,,A breadcrumb trail mapping the concept's lineage separated by ' > '.,Religion and philosophy > Belief > Catholicism
-Synonyms,String,,Alternative labels or abbreviations separated by a pipe (' | ').,Roman Catholic | RCC
-Description,String,,A textual definition scope note or exact survey question text.,A demographic group representing adherents to the Catholic Church.
-Parent_IDs,String,,Local Concept IDs of immediate parents separated by a pipe (' | ').,1400009 | LP74253-3
-Concept_ID,String,,The raw local alphanumeric identifier assigned by the source system.,dg2015060124
-URI,String (URL),,The globally unique resolvable Uniform Resource Identifier. Used as primary key for deduplication.,http://snomed.info/id/105390002
-Has_Translation,String,yes | [blank],Boolean flag indicating if the source API contains non-English designations.,yes
-Status,String,,The current lifecycle state of the concept within the source system.,active | deprecated | retired
-Crosswalks,String,,"Pre-existing mapping links to other ontologies (e.g., skos:exactMatch, owl:sameAs, or text-based mapping notes). Separated by a pipe (' | ').","http://vocab.getty.edu/aat/300073711 | LC: identical"
-Extraction_Date,Datetime String,,Local system timestamp when the Python ingestion script generated the row (YYYY-MM-DD HH:MM:SS).,2026-03-11 14:30:00
+Column_Name,Data_Type,Permissible_Values,Definition,Examples,Pipeline_Layer
+Source_System,String,,The human-readable name of the originating ontology or database.,SNOMED CT | LOINC,all
+Primary_Label,String,,The preferred human-readable display name of the concept in English.,Pastoral care Hospital Progress note,all
+CURIE,String,,Compact URI formatted strictly as PREFIX:ID. Prefix must exist in source_registry.csv.,SNOMED:105390002,all
+Formal_Label,String,,The logically constructed Fully Specified Name (FSN). Mirrors Primary_Label if none exists.,Religious affiliation (observable entity),all
+Concept_Type,Categorical String,"skos:Concept | owl:Class (Primitive) | owl:Class (Fully Defined) | owl:Property | skos:Collection",The W3C Representational Semantics defining the structural role of the node.,skos:Concept,all
+Hierarchy_Path,String,,A breadcrumb trail mapping the concept's lineage separated by ' > '.,Religion and philosophy > Belief > Catholicism,all
+Synonyms,String,,Alternative labels or abbreviations separated by a pipe (' | ').,Roman Catholic | RCC,all
+Description,String,,A textual definition scope note or exact survey question text.,A demographic group representing adherents to the Catholic Church.,all
+Parent_IDs,String,,Local Concept IDs of immediate parents separated by a pipe (' | ').,1400009 | LP74253-3,all
+Concept_ID,String,,The raw local alphanumeric identifier assigned by the source system.,dg2015060124,all
+URI,String (URL),,The globally unique resolvable Uniform Resource Identifier. Used as primary key for deduplication.,http://snomed.info/id/105390002,all
+Has_Translation,String,yes | [blank],Boolean flag indicating if the source API contains non-English designations.,yes,all
+Status,String,,The current lifecycle state of the concept within the source system.,active | deprecated | retired,all
+Crosswalks,String,,"Pre-existing mapping links to other ontologies (e.g., skos:exactMatch, owl:sameAs, or text-based mapping notes). Separated by a pipe (' | ').","http://vocab.getty.edu/aat/300073711 | LC: identical",all
+Extraction_Date,Datetime String,,Local system timestamp when the Python ingestion script generated the row (YYYY-MM-DD HH:MM:SS).,2026-03-11 14:30:00,all
+working_category,Categorical String,identities | beliefs | practices...,The semantic classification within the domain of religion.,practices,processed only
+review_status,Categorical String,Human Reviewed | Pending API...,The data lifecycle state of the concept.,Human Reviewed,processed only
