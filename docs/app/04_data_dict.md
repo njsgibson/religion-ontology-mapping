@@ -2,4 +2,4 @@
 
 The following data dictionary defines the standard schema, data types, and expected values for the dataset underlying this application. 
 
-Because the source ontologies possess wildly different native architectures, this standardized schema acts as the common denominator. It allows highly structured clinical data (like SNOMED CT) to be searched and analyzed directly alongside flat demographic lists (like the ONS census categories) without losing the core semantic meaning of the concepts.
+Because the source ontologies possess substantially different native architectures, this standardized schema acts as the common denominator. It allows highly structured clinical data (like SNOMED CT) to be searched and analyzed directly alongside flat demographic lists (like the ONS census categories) without losing the core semantic meaning of the concepts. Full documentation on the ingestion pipeline may be found in the [METHODOLOGY.md file](https://github.com/njsgibson/religion-ontology-mapping/blob/main/METHODOLOGY.md) shared in the project GitHub repository.
