@@ -526,7 +526,7 @@ def source_explorer():
 def data_sources():
     st.header("Data Sources")
     st.markdown("### Source Registry")
-    st.markdown("The following ontologies and vocabularies are currently integrated into the Religion Ontology Explorer.")
+    st.markdown("The following ontologies and vocabularies are currently integrated into the Religion Ontology Explorer. Full documentation on the ingestion pipeline may be found in the [METHODOLOGY.md file](https://github.com/njsgibson/religion-ontology-mapping/blob/main/METHODOLOGY.md) shared in the project GitHub repository.")
     
     registry_df = load_csv_config("source_registry.csv")
     if "Source_Name" in registry_df.columns:
