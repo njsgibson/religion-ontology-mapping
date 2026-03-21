@@ -1,0 +1,53 @@
+### Source descriptions
+
+To meaningfully explore and compare the religion-related concepts included in the source ontologies, it is helpful to consider the original purpose and design of each of those ontologies. While the dataset underlying this application is the result of a process to flatten them into a standardized format for exploration and mapping, their original architectures should inform your understanding of the meaning of these concepts and how they define hierarchy.
+
+#### [American Folklore Society Ethnographic Terms (AFSET)](https://id.loc.gov/vocabulary/ethnographicTerms.html)
+Developed by the American Folklore Society and maintained by the Library of Congress, this vocabulary is used to index and retrieve materials in folklore, ethnomusicology, and cultural anthropology collections. It is natively published in Linked Open Data (LOD) format. AFSET is built as a standard Simple Knowledge Organization System (SKOS) vocabulary. It asserts concepts and organizes them with formal broader/narrower relationships, alternative labels, and lateral associations.
+
+#### [Association of Religion Data Archives (ARDA)](https://www.thearda.com/)
+The ARDA is a domain repository for quantitative data on religion. Sociologists and other researchers use its taxonomies to categorize religious groups, trace historical lineages, and track measures of religious behaviors and attitudes. Because ARDA does not natively publish a unified, machine-readable ontology in Linked Open Data (LOD) format, synthetic CURIEs are applied in this dataset. ARDA divides its conceptual data into three distinct web architectures, each of which can be explored in this application:
+* **US religious groups**: a flat index of active groups, categorized sociologically by "tradition" and "family."
+* **World religion family trees**: an interactive web visualization mapping the lineage of major world religions, occasionally featuring polyhierarchy (where a group inherits from two different parent nodes).
+* **Measurements**: an index of single-item measurement concepts, categorized by higher-order concepts like "spiritual experiences" and "religious/metaphysical beliefs."
+
+#### [Australian Standard Classification of Religious Groups (ASCRG)](https://www.abs.gov.au/statistics/classifications/australian-standard-classification-religious-groups)
+Published by the Australian Bureau of Statistics, this classification is used primarily to collect, aggregate, and disseminate demographic statistics during the Australian Census. The ASCRG does not use Linked Open Data formats or assign resolvable URIs to its concepts; synthetic CURIEs are therefore applied in this dataset. Instead, it is a flat classification where hierarchy is defined by strict mathematical character lengths (broad groups are 2-digit codes, narrow groups are 4-digit codes, and specific religious groups are 6-digit codes).
+
+#### [Database of Religious History (DRH)](https://religiondatabase.org/)
+Hosted at the University of British Columbia, the DRH is an expert-curated, quantitative encyclopedia of religious groups, places, and texts. Historians and archaeologists use it to map the historical development of religious phenomena over time and space. It does not currently publish its data in Linked Open Data (LOD) format, so synthetic CURIEs are used here. Its primary structural taxonomy consists of "tagging trees" (used to classify encyclopedia entries) and "polls" (highly structured survey instruments used by experts to answer quantitative questions about specific historical groups).
+
+#### [European Language Social Science Thesaurus (ELSST)](https://elsst.cessda.eu/)
+Managed by the Consortium of European Social Science Data Archives (CESSDA), ELSST is used to index and search social science data across European repositories, enabling cross-national research. It is published natively in Linked Open Data (LOD) format. ELSST strictly follows W3C SKOS logic (broader/narrower relationships). Its defining structural feature is multilingualism: every property (labels, notes, alternative labels) is heavily nested in language-tagged arrays to support pan-European data discovery.
+
+#### [Getty Art & Architecture Thesaurus (AAT)](https://www.getty.edu/research/tools/vocabularies/aat/)
+The AAT is the global standard for cataloging art, architecture, and material culture. Museums, libraries, and archives use it to describe physical artifacts, buildings, and the cultural movements or belief systems that produced them. It is available natively as Linked Open Data (LOD). AAT is built on SKOS but heavily uses custom Getty Vocabulary Program extensions. Its defining structural feature is deep polyhierarchy—meaning that a single concept can have multiple valid broader parents across entirely different branches of the tree.
+
+#### [Health Level Seven International (HL7 v2 & v3)](https://terminology.hl7.org/)
+HL7 provides international interoperability standards for the transfer of clinical and administrative health data between software applications (e.g., hospital billing and electronic health records). The HL7 Terminology is natively formatted as Linked Open Data (LOD). It publishes distinct "CodeSystems" defining acceptable values for specific data fields (like "Religious Affiliation"). The data is structured hierarchically, where narrower concepts are nested inside arrays attached to their broader parents.
+
+#### [Library of Congress Demographic Group Terms (LCDGT)](https://id.loc.gov/authorities/demographicTerms.html)
+LCDGT is used by libraries to catalog the demographic characteristics of the creators, contributors, and intended audiences of library materials (e.g., tagging a book as written by "Anglicans" or intended for "Clergy"). It is published by the Library of Congress as Linked Open Data (LOD). Rather than indexing general subjects, it catalogs the attributes of people. It groups mathematically unrelated concepts by broad thematic domains using collections, including the specific "Religion" collection that is explorable here.
+
+#### [Library of Congress Subject Headings (LCSH)](https://id.loc.gov/authorities/subjects.html)
+LCSH is perhaps the most widely used general subject indexing system in the world. It is used to tag the topical content of books, articles, and media in libraries globally, and is available natively in Linked Open Data (LOD) format. LCSH is an associative ontology. While it uses hierarchical relationships, it is not built as a strict taxonomy. Connections between concepts frequently jump across unrelated domains, creating a graph where semantic drift is common (e.g., navigating downward from "religions" quickly introduces concepts from unrelated fields).
+
+#### [Logical Observation Identifiers Names and Codes (LOINC)](https://loinc.org/)
+LOINC is the international standard for identifying health measurements, medical laboratory observations, and clinical surveys. When a patient fills out a spiritual health intake survey at a hospital, the questions and multiple-choice answers are often standardized using LOINC codes, which are published natively in Linked Open Data (LOD) format via FHIR standards. Unlike traditional ontologies, LOINC is a clinical catalog that mixes several entity types within a flat structure. A standard query returns a mix of complete observations (the survey questions) alongside the atomized parts, answers, and lists used to build them. Full observations lack a broader/narrower taxonomy; instead, every code is defined by a unique combination of six independent axes (Component, Property, Time, System, Scale, Method).
+
+#### [Medical Subject Headings (MeSH)](https://www.nlm.nih.gov/mesh/meshhome.html)
+Produced by the US National Library of Medicine, MeSH is used to index and search the vast body of life sciences and medical literature, most notably powering searches in the PubMed/MEDLINE databases. It is available as Linked Open Data (LOD). MeSH does not follow a standard single-node tree structure. It uses a three-tiered "bucket" system:
+* **Descriptors (D-Nodes)**: the official structural tree (e.g., "Protestantism"). These establish the vertical hierarchy but do not hold text natively.
+* **Concepts (M-Nodes)**: the semantic entities that live inside a descriptor bucket. Every descriptor has one preferred concept and often several non-preferred concepts.
+* **Terms (T-Nodes)**: the exact string labels and synonyms attached to concepts.
+
+MeSH also applies the label "related" in two distinct structural contexts: as an associative link between concepts within the same bucket, and as a cross-tree connection between completely separate branches of the primary tree.
+
+#### [Office for National Statistics (ONS) – Census 2021](https://www.ons.gov.uk/census/census2021dictionary/variablesbytopic/ethnicgroupnationalidentitylanguageandreligionvariablescensus2021/religiondetailed/classifications)
+The UK's Office for National Statistics uses this detailed classification system to capture, analyze, and report on the religious identity of the population during the decennial census of England and Wales. These data are not natively published as a bulk Linked Open Data (LOD) file, so this dataset utilizes synthetic CURIEs to identify them. The source data are published as static HTML tables on the ONS dictionary web pages. The data is entirely flat, consisting of alphanumeric codes and strings.
+
+#### [Systematized Nomenclature of Medicine – Clinical Terms (SNOMED CT)](https://www.snomed.org/)
+SNOMED CT is a comprehensive, multilingual clinical healthcare terminology. It is often embedded directly into Electronic Health Record (EHR) software to record clinical details, diagnoses, and patient contexts (including religious affiliations that might impact care, like dietary restrictions or blood transfusion objections). It is natively formatted as Linked Open Data (LOD). SNOMED is built on Description Logic. Concepts are not merely placed in a taxonomic tree, but are defined by associative relationships (e.g., the concept "Roman Catholic" is defined by an "Is a" relationship to "Christian" and an "Interprets" relationship to "social / personal history"). Furthermore, SNOMED enforces a strict mathematical distinction between "primitive" concepts and "fully defined" concepts.
+
+#### [Thesaurus for Graphic Materials (TGM)](https://www.loc.gov/pictures/collection/tgm/)
+Maintained by the Library of Congress, the TGM provides a standardized vocabulary specifically for cataloging and searching the visual subjects of historical photographs, prints, and drawings. It is available as Linked Open Data (LOD). Its structure is relatively shallow and flat, relying more on associative links than deep taxonomic trees.
