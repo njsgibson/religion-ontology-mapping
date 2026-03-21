@@ -140,40 +140,40 @@ def dataset_overview():
         )
 
     # Render the HTML table
-    html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">'
+    html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.95em; color: var(--text-color);">'
     html += '<thead><tr style="border-bottom: 2px solid rgba(128,128,128,0.5);">'
-    html += '<th style="text-align: left; padding: 10px; color: #a0a0a0; font-weight: 600;">Source System</th>'
+    html += '<th style="text-align: left; padding: 10px; opacity: 0.7; font-weight: 600;">Source System</th>'
     
     for col in volume_matrix.columns:
         is_total_col = (col == 'Total')
         header_text = 'total' if is_total_col else col
         if is_total_col:
-            th_style = "text-align: right; padding: 10px 25px 10px 10px; color: #a0a0a0; font-weight: 600; width: 110px; border-left: 1px solid rgba(128,128,128,0.2); background-color: rgba(255, 255, 255, 0.02);"
+            th_style = "text-align: right; padding: 10px 25px 10px 10px; opacity: 0.7; font-weight: 600; width: 110px; border-left: 1px solid rgba(128,128,128,0.2); background-color: rgba(128, 128, 128, 0.05);"
         else:
-            th_style = "text-align: right; padding: 10px 25px 10px 10px; color: #a0a0a0; font-weight: 600;"
+            th_style = "text-align: right; padding: 10px 25px 10px 10px; opacity: 0.7; font-weight: 600;"
         html += f'<th style="{th_style}">{header_text}</th>'
     html += '</tr></thead><tbody>'
     
     for idx, row in volume_matrix.iterrows():
         is_total_row = (idx == 'Total')
         if is_total_row:
-            row_style = 'border-top: 2px solid rgba(128,128,128,0.5); font-weight: bold; background-color: rgba(255, 255, 255, 0.05);'
+            row_style = 'border-top: 2px solid rgba(128,128,128,0.5); font-weight: bold; background-color: rgba(128, 128, 128, 0.05);'
             idx_text = 'total'
         else:
             row_style = 'border-bottom: 1px solid rgba(128,128,128,0.2);'
             idx_text = idx
             
         html += f'<tr style="{row_style}">'
-        idx_style = 'font-weight: bold; color: white;' if is_total_row else 'color: #e0e0e0;'
+        idx_style = 'font-weight: bold;' if is_total_row else 'opacity: 0.9;'
         html += f'<td style="text-align: left; padding: 10px; {idx_style}">{idx_text}</td>'
         
         for col_name, val in row.items():
             is_total_col = (col_name == 'Total')
             cell_weight = 'bold' if (is_total_col or is_total_row) else 'normal'
-            val_str = f"{val:,}" if val > 0 else "<span style='color: #666666;'>-</span>"
+            val_str = f"{val:,}" if val > 0 else "<span style='opacity: 0.3;'>-</span>"
                 
             if is_total_col:
-                td_style = f"text-align: right; padding: 10px 25px 10px 10px; font-weight: {cell_weight}; border-left: 1px solid rgba(128,128,128,0.2); background-color: rgba(255, 255, 255, 0.02);"
+                td_style = f"text-align: right; padding: 10px 25px 10px 10px; font-weight: {cell_weight}; border-left: 1px solid rgba(128,128,128,0.2); background-color: rgba(128, 128, 128, 0.05);"
             else:
                 td_style = f"text-align: right; padding: 10px 25px 10px 10px; font-weight: {cell_weight};"
             html += f'<td style="{td_style}">{val_str}</td>'
