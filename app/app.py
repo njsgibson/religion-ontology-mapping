@@ -203,7 +203,7 @@ def concept_explorer():
     with row1_col1: 
         search_term = st_keyup("search term", value="")
     with row1_col2: 
-        search_columns = st.multiselect("search in", options=["Primary_Label", "Synonyms", "Description", "Formal_Label"], default=["Primary_Label"])
+        search_columns = st.multiselect("search in", options=["Primary_Label", "Synonyms", "Description", "Hierarchy_Path", "Formal_Label"], default=["Primary_Label"])
 
     row2_col1, row2_col2 = st.columns(2)
     with row2_col1: 
