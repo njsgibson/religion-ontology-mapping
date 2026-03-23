@@ -281,13 +281,22 @@ The UK's Office for National Statistics (ONS) publishes the "Religion (detailed)
 
 ### Religious Health Interventions in Behavioral Sciences (RHIBS) Taxonomy
 
-The RHIBS Taxonomy is a taxonomy of religiously integrated healthcare interventions. It consists of 82 specific practices organized into 22 general categories. It is not published as Linked Open Data (LOD) or via an API, but is distributed as a supplementary table embedded within a published manuscript (`.docx` format; DOI: 10.1093/tbm/ibac054). 
+The RHIBS Taxonomy is a taxonomy of religiously integrated healthcare interventions. It consists of 82 specific practices organized into 22 general categories. It is not published as Linked Open Data (LOD) or via an API, but is distributed as a supplementary table embedded within a published manuscript (`.docx` format; DOI: [10.1093/tbm/ibac054](https://doi.org/10.1093/tbm/ibac054)).
 
 1. **Local bulk parsing (Strategy A):** Because the data is locked in a static word processing document, live API crawling is impossible. The pipeline uses the `python-docx` library to load the raw file into local memory and iterate through the table's rows.
 2. **Run-level text parsing:** The native document merges Concept Names and Concept Descriptions into single table cells. To disentangle them, the pipeline parses the text formatting at the W3C "Run" level. Bolded text is extracted as the `Primary_Label`, while unbolded text and specific instructional paragraphs (e.g., those beginning with "NB") are routed to the `Description` column.
 3. **Mathematical hierarchy reconstruction:** The script accounts for the document's vertically merged cells (which repeat text across spanned rows in memory) by using string comparison. A change in the extracted "General Category" label signals the script to generate a new root node, mathematically establishing the parent-child relationships for subsequent rows.
 4. **Identifier management:** RHIBS does not use URIs or native alphanumeric IDs. To satisfy SSSOM harmonization requirements, the script synthesizes a structured sequence of primary keys. General categories are assigned sequential integers (e.g., `1`, `2`), and their specific components are assigned alphabetical suffixes (e.g., `1A`, `1B`). Because there is no LOD base URI, the schema's `URI` column is intentionally left blank.
 5. **Data pruning for structural purity:** The native table includes metadata explicitly detailing clinical delivery methods (e.g., "Facilitated by", "With whom") and an extensive bibliographic mapping of relevant research literature. Consistent with our rules to maintain semantic structural purity, these details are intentionally dropped during Bronze Layer extraction.
+
+### R|S Atlas (Religion and Spirituality Atlas)
+
+The R|S Atlas is an ontology developed to categorize religion and spirituality survey items collected across NIH-funded US cohort studies.It consists of 50 concepts distributed across 12 general categories. The ontology is not published as Linked Open Data (LOD) but is available as a structured table in a published manuscript (DOI: [10.1136/bmjopen-2020-043830](https://doi.org/10.1136/bmjopen-2020-043830)).
+
+1. **Local bulk parsing (Strategy A):** To ensure reproducibility, the pipeline parses the raw HTML of Table 3 from the published article. 
+2. **Structural detection:** The script identifies the two-tier hierarchy by differentiating between bolded HTML tags (`<strong>`), which signify root categories, and indented text nodes, which signify child concepts.
+3. **Identifier management:** The R|S Atlas does not use native alphanumeric IDs or URIs. The pipeline therefore synthesizes sequential primary keys (e.g., `1`, `1A`, `1B`) to establish stable CURIEs within the `RSATLAS` namespace. The `URI` column remains blank to reflect its non-LOD status.
+4. **Data pruning:** The native table includes statistical metadata regarding the count of individual survey items and unique constructs associated with each category in the US cohort data. This quantitative information is intentionally dropped to isolate the semantic structure of the ontology for mapping.
 
 ### Systematized Nomenclature of Medicine – Clinical Terms (SNOMED CT)
 
