@@ -133,6 +133,17 @@ AFSET is built as a standard Simple Knowledge Organization System (SKOS) vocabul
 * **Lateral exclusion:** Consistent with our goal to prepare the dataset for SSSOM harmonization, we actively ignore `skos:related` edges during ingestion, extracting only the vertical taxonomy. We subsequently harvest these lateral links separately to suggest potential new branches for scope review.
 
 
+### APA Thesaurus of Psychological Index Terms
+
+The APA Thesaurus is a controlled vocabulary for the behavioral sciences. However, it is not published as Linked Open Data (LOD) and is paywalled within proprietary Single Page Application (SPA) database interfaces (e.g., PsycNet, EBSCOhost). Because the SPA architecture and institutional authentication mechanisms explicitly prevent automated web scraping, the pipeline relies on a manual intervention strategy to ingest a proof-of-concept subset.
+
+1. **Manual brute-force extraction:** A human researcher with institutional access navigates the proprietary interface, manually extracting target concepts, IDs, parent relationships, synonyms, and scope notes into a flat local file (`data/external/APA.csv`).
+2. **Local parsing and normalization (Strategy A):** The ingestion script loads the manual extract using aggressive encoding normalization (`utf-8-sig`) and whitespace stripping to prevent invisible characters (e.g., Byte Order Marks) from corrupting the headers.
+3. **Dynamic bottom-up ancestry resolution:** The script reverse-engineers the vertical taxonomy mathematically. It uses a recursive Python function to climb upward from each concept's `Parent_ID` to construct the `Hierarchy_Path` string. 
+4. **Out-of-scope parent hardcoding:** Because the manual extract only captures targeted sub-graphs (e.g., religion-specific branches), the recursive ancestry builder eventually hits parent IDs that do not exist in the extracted dataset. The script identifies these unresolved root IDs via a QA report, allowing the researcher to map them to their true semantic labels via a hardcoded dictionary in the script (e.g., `'23535': 'Humanities'`).
+5. **Identifier synthesis:** To satisfy SSSOM mapping requirements, the pipeline synthesizes standard CURIEs by concatenating the namespace with the APA's native 5-digit code (e.g., `APA:43770`). The `URI` column is populated with the corresponding PsycNet structural URL to provide a resolvable target for end users with institutional access.
+
+
 ### Association of Religion Data Archives (ARDA)
 The ARDA provides sociological classifications of religious groups. Rather than publishing a unified, machine-readable ontology (LOD) or a standard API, ARDA divides its conceptual data into three distinct web-based architectures:
 1. **US Religious Groups:** A massive, flat HTML index of over 1,100 active groups, categorized sociologically by "Tradition" and "Family." Detailed descriptions exist only on individual HTML landing pages.
