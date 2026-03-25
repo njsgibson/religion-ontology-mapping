@@ -1,7 +1,7 @@
 ## User Guide
 This application features three tools designed to help researchers explore the religion-related concepts used in the source ontologies.
 
-### 1. Concept Explorer 
+### 1. Concept Explorer -- [GO](https://religion-ontology.streamlit.app/concept_explorer)
 This tool provides a tabular interface for you to search for and inspect concepts from across the integrated ontologies. As you type in the search box, it will directly query the consolidated dataset to match text strings across your specified fields, allowing you to isolate concepts of interest before downloading them or tracing them back to their source ontologies.
 
 * Query any or all of `Primary_Label` (by default), `Synonyms`, `Description`, `Hierarchy_Path`, or `Formal_Label` to find concepts that might use different primary terminology in different disciplines. The table will filter immediately as you type into it.
@@ -9,7 +9,7 @@ This tool provides a tabular interface for you to search for and inspect concept
 * The filtered dataset includes URIs (where available) that you can click on to visit the source ontology's webpage for any given concept. 
 * Interact with the table settings (hover over the top right corner of the table) to change what columns are visible or to download as a CSV whatever is currently in view.
  
-### 2. Concept Frequency
+### 2. Concept Frequency -- [GO](https://religion-ontology.streamlit.app/concept_frequency)
 This tool allows you to explore which terms are most salient within a chosen category. It does not look at the formal logical mapping; instead, it uses a Natural Language Processing (NLP) pipeline to analyze the linguistic patterns of the concepts' primary labels. 
  
 When a category is selected, the tool executes the following pipeline:
@@ -21,7 +21,7 @@ When a category is selected, the tool executes the following pipeline:
 
 Tip: Hovering over a given bar on the chart will show which sources include that term.
 
-### 3. Source Explorer
+### 3. Source Explorer -- [GO](https://religion-ontology.streamlit.app/source_explorer)
 While some ontologies are flat catalogs of concepts, others contain hundreds of nodes in deeply nested, sometimes polyhierarchical structures (where a child has multiple parents). Given this, attempting to visualize an entire tree at once is challenging (or just inadvisable). The Source Explorer solves this by computing an **adjacency graph** constrained to your selected category, allowing you to navigate these trees level by level. 
 
 **How it works:**

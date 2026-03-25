@@ -21,3 +21,8 @@ OCM,Outline of Cultural Materials,,PENDING REVIEW,https://ehrafworldcultures.yal
 APA,APA Thesaurus of Psychological Index Terms,,PENDING REVIEW,https://psycnet.apa.org/thesaurus/,,synthetic
 UDC,Universal Decimal Classification Summary,http://udcdata.info/,CC BY-SA 3.0,https://udcsummary.info/,,LOD
 DDC,Dewey Decimal Classification,https://id.oclc.org/worldcat/ddc/,CC BY-NC-ND 3.0,https://entities.oclc.org/worldcat/ddc,23,LOD
+WIKIDATA,Wikidata,http://www.wikidata.org/entity/,CC0,https://www.wikidata.org/,2026-03-25,LOD
+UNESCO,UNESCO Thesaurus,,,,,
+FAST,Faceted Application of Subject Terminology,,,,,
+EUROVOC,EU Multilingual Thesaurus,,,,,
+GND,Integrated Authority File,,,,,

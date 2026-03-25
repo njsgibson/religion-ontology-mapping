@@ -14,5 +14,5 @@ Has_Translation,String,Boolean flag indicating if the source API contains non-En
 Status,String,The current lifecycle state of the concept within the source system.,,active | deprecated | retired,all
 Crosswalks,String,"Pre-existing mapping links to other ontologies (e.g., skos:exactMatch, owl:sameAs, or text-based mapping notes). Separated by a pipe (' | ').",,"http://vocab.getty.edu/aat/300073711 | LC: identical",all
 Extraction_Date,Datetime String,Local system timestamp when the Python ingestion script generated the row (YYYY-MM-DD HH:MM:SS).,,2026-03-11 14:30:00,all
-working_category,Categorical String,The semantic classification within the domain of religion.,identities | beliefs | practices...,practices,processed only
+working_category,Categorical String,The semantic classification within the domain of religion.,identities | beliefs | practices | buildings | communities | occupations | material | religious other | non-religious,practices,processed only
 review_status,Categorical String,The data lifecycle state of the concept.,Human Reviewed | Pending API...,Human Reviewed,processed only
