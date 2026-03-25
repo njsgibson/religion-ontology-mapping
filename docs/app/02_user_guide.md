@@ -4,7 +4,7 @@ This application features three tools designed to help researchers explore the r
 ### 1. Concept Explorer 
 This tool provides a tabular interface for you to search for and inspect concepts from across the integrated ontologies. As you type in the search box, it will directly query the consolidated dataset to match text strings across your specified fields, allowing you to isolate concepts of interest before downloading them or tracing them back to their source ontologies.
 
-* Query any or all of `Primary_Label` (by default), `Synonyms`, `Description`, or `Formal_Label` to find concepts that might use different primary terminology in different disciplines. The table will filter immediately as you type into it.
+* Query any or all of `Primary_Label` (by default), `Synonyms`, `Description`, `Hierarchy_Path`, or `Formal_Label` to find concepts that might use different primary terminology in different disciplines. The table will filter immediately as you type into it.
 * You may filter the dataset by selecting a **category** or **source**.
 * The filtered dataset includes URIs (where available) that you can click on to visit the source ontology's webpage for any given concept. 
 * Interact with the table settings (hover over the top right corner of the table) to change what columns are visible or to download as a CSV whatever is currently in view.

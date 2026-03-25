@@ -14,7 +14,7 @@ This project takes an intentionally broad view of the domain of religion. To aid
 * **beliefs**: religious or spiritual beliefs, doctrines, theological concepts, or objects of religious or spiritual beliefs such as supernatural beings or entities (e.g., beliefs about God, souls, afterlife, salvation)
 * **practices**: religious or spiritual practices, rituals, activities, or behaviors (e.g., prayer, baptism, worship, service attendance, fasting, spiritual healing)
 * **occupations**: religious or spiritual occupations, roles, or people (e.g., clergy, priest, imam, chaplain, shaman, monk)
-* **buildings**: religious or spiritual buildings, physical structures, or infrastructure (e.g., church, temple, mosque, chapel, shrine).
+* **buildings**: religious or spiritual buildings, physical structures, or infrastructure (e.g., church, temple, mosque, chapel, shrine)
 * **communities**: religious or spiritual social structures, organizations, groups, or administrative bodies (e.g., congregation, parish, prayer group, diocese)
 * **material**: religion-related or spirituality-related material concepts, physical objects, texts, or articles (e.g., Bible, font, vestment, rosary, prayer beads)
 * **religious other**: religion-related concepts that do not fit one of the above categories

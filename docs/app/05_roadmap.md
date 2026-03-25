@@ -4,9 +4,11 @@ While every effort is made to accurately extract, normalize, and categorize data
 
 ### Known data and ingestion issues
 
-* **LCSH**: At present, the data from LCSH is limited to "Sects" and "Cults", its names for religious groups and identities. LCSH certainly contains more religion-related concepts, but due to liberal use of narrower and broader linkages within LCSH, extracting other concepts requires more work. 
 * **consistency in `Parent_ID`s**: The `Parent_ID` element may not be consistently extracted as a base Concept_ID (e.g., instead as a CURIE). 
-* **category murkiness**: The categories "buildings" and "material" overlap somewhat (e.g., considering rooms or architectural elements), suggesting a merger might be helpful.
+* **category murkiness**: 
+  * "religious other" is a grab bag of interesting things that likely should be considered further, e.g., religious experiences, strength of religious commitment, and so on.
+  * "buildings" and "material" overlap somewhat (e.g., considering rooms or architectural elements), suggesting a merger is worth considering.
+  * concepts for symbols (e.g., "Mandala", "sigils") are likely inconsistently split between "material" and "religious other".
 * **source idiosyncracies**: Some sources are not ontologically coherent. For example, DRH includes within its religious groups trees various concepts that probably belong as texts or practices. I have generally tried to categorize in ways that preserve the spirit of the source, e.g., all concepts in HL7 v3 are categorized as "identities", even though several ("divination", "gnosis", "meditation", "veda") might have otherwise reasonably been categorized in some other way.
 
 ### Roadmap and planned enhancements
