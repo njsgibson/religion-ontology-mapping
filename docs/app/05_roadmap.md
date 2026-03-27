@@ -5,7 +5,7 @@ While every effort is made to accurately extract, normalize, and categorize data
 ### Known data and ingestion issues
 
 * **consistency in `Parent_ID`s**: The `Parent_ID` element may not be consistently extracted as a base Concept_ID (e.g., instead as a CURIE). 
-* **category murkiness**: 
+* **category murkiness**:
   * "religious other" is a grab bag of interesting things that likely should be considered further, e.g., religious experiences, strength of religious commitment, and so on.
   * "buildings" and "material" overlap somewhat (e.g., considering rooms or architectural elements), suggesting a merger is worth considering.
   * concepts for symbols (e.g., "Mandala", "sigils") are likely inconsistently split between "material" and "religious other".
