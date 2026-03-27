@@ -12,7 +12,8 @@ While every effort is made to accurately extract, normalize, and categorize data
 * **source idiosyncracies**: Some sources are not ontologically coherent. For example, DRH includes within its religious groups trees various concepts that probably belong as texts or practices. I have generally tried to categorize in ways that preserve the spirit of the source, e.g., all concepts in HL7 v3 are categorized as "identities", even though several ("divination", "gnosis", "meditation", "veda") might have otherwise reasonably been categorized in some other way.
 
 ### Roadmap and planned enhancements
-* **adding additional sources**: There are many more ontologies and taxonomies containing religion-related concepts. Please contact us if there are particular sources that you would like us to prioritize.
+* **adding additional sources**: There are many more ontologies and taxonomies containing religion-related concepts. Please contact us if there are particular sources that you would like us to prioritize. Likely next sources to be added include the UNESCO Thesaurus, Faceted Application of Subject Terminology (FAST), the EU Multilingual Thesaurus (EuroVoc), and the GND. 
+
 * **adding additional exploration tools or features**: For example, adding a fuzzy search option to the Concept Explorer.
 * **semantic alignment**: This application represents the exploratory phase of a broader project intended to enable semantic mapping of crosswalks across ontologies. We intend to work with a broad user group to develop a Simple Standard for Sharing Ontology Mappings (SSSOM) pipeline to formally map these vocabularies to each other (e.g., to assert that an AAT concept is an `exactMatch` or `closeMatch` to a DRH concept).
 
