@@ -176,7 +176,8 @@ def dataset_overview():
 
 def concept_search():
     st.header("Concept Search")
-    st.markdown("Search for specific terms across the aggregated dataset. Filter by source or conceptual category.")
+    st.markdown("Search for specific terms across the aggregated dataset. Filter by source or conceptual category. Click on a row in the table below to view its full details.")
+    st.markdown("<br>", unsafe_allow_html=True) 
     
     required_cols = ['working_category', 'Source_System', 'Primary_Label', 'Synonyms', 'Description', 'Formal_Label', 'URI']
     missing_cols = [col for col in required_cols if col not in df.columns]
@@ -191,20 +192,39 @@ def concept_search():
     categories.insert(0, "All Categories")
     sources = sorted([src for src in df['Source_System'].unique() if src])
 
-    # --- UI Controls (Rearranged) ---
-    row1_col1, row1_col2 = st.columns(2)
-    with row1_col1: 
-        search_term = st_keyup("search term", value="")
-    with row1_col2: 
-        search_columns = st.multiselect("search in", options=["Primary_Label", "Synonyms", "Description", "Hierarchy_Path", "Formal_Label"], default=["Primary_Label"])
+    # Helper function to render table rows
+    def table_row(label, value, is_link=False):
+        val_str = str(value) if pd.notna(value) and str(value).strip() != "" else "N/A"
+        if is_link and val_str != "N/A": val_str = f'<a href="{val_str}" target="_blank" style="color: #4da6ff; text-decoration: none;">{val_str}</a>'
+        return f'<tr><td style="padding: 10px 0; width: 140px; color: gray; vertical-align: top; font-weight: 500; border: none;">{label}</td><td style="padding: 10px 0; vertical-align: top; border: none;">{val_str}</td></tr>'
 
-    row2_col1, row2_col2 = st.columns(2)
-    with row2_col1: 
-        selected_sources = st.multiselect("select source", options=sources, default=[])
-    with row2_col2: 
-        selected_category = st.selectbox("select category", categories)
+    # --- 1. Top-Down Layout for Filters ---
+    top_dash_filters, top_dash_details = st.columns([1, 2], gap="large")
 
-    # --- Filtering Logic ---
+    with top_dash_filters:
+        st.markdown("### Search & Filters")
+        
+        # Use nested columns to place labels beside the widgets.
+        # We use a 1-to-2.5 ratio so the inputs have plenty of room.
+        # A tiny bit of inline margin-top ensures the text vertically aligns with the box.
+        
+        c_lbl1, c_inp1 = st.columns([1, 2.5])
+        with c_lbl1: st.markdown("<div style='margin-top: 8px; font-size: 0.95em;'>search term</div>", unsafe_allow_html=True)
+        with c_inp1: search_term = st_keyup("search term", value="", label_visibility="collapsed")
+        
+        c_lbl2, c_inp2 = st.columns([1, 2.5])
+        with c_lbl2: st.markdown("<div style='margin-top: 8px; font-size: 0.95em;'>search in</div>", unsafe_allow_html=True)
+        with c_inp2: search_columns = st.multiselect("search in", options=["Primary_Label", "Synonyms", "Description", "Hierarchy_Path", "Formal_Label"], default=["Primary_Label"], label_visibility="collapsed")
+        
+        c_lbl3, c_inp3 = st.columns([1, 2.5])
+        with c_lbl3: st.markdown("<div style='margin-top: 8px; font-size: 0.95em;'>select source</div>", unsafe_allow_html=True)
+        with c_inp3: selected_sources = st.multiselect("select source", options=sources, default=[], label_visibility="collapsed")
+        
+        c_lbl4, c_inp4 = st.columns([1, 2.5])
+        with c_lbl4: st.markdown("<div style='margin-top: 8px; font-size: 0.95em;'>select category</div>", unsafe_allow_html=True)
+        with c_inp4: selected_category = st.selectbox("select category", categories, label_visibility="collapsed")
+
+    # --- 2. Filtering Logic ---
     filtered_df = df.copy()
     if selected_category != "All Categories":
         filtered_df = filtered_df[filtered_df['working_category'] == selected_category]
@@ -217,17 +237,61 @@ def concept_search():
             mask |= filtered_df[col].astype(str).str.lower().str.contains(search_lower, na=False)
         filtered_df = filtered_df[mask]
 
+    # --- 3. Render the Details Panel (Reading from the table's state) ---
+    with top_dash_details:
+        if "concept_table" in st.session_state and len(st.session_state.concept_table.selection.rows) > 0:
+            selected_index = st.session_state.concept_table.selection.rows[0]
+            target_node = filtered_df.iloc[selected_index]
+            
+            # Dynamically parse the Crosswalks string to make any embedded URLs clickable
+            crosswalks_raw = target_node.get("Crosswalks")
+            crosswalks_html = "N/A"
+            if pd.notna(crosswalks_raw) and str(crosswalks_raw).strip() != "":
+                # This regex finds http/https links and wraps them in styled HTML <a> tags
+                crosswalks_html = re.sub(
+                    r'(https?://[^\s|<>"]+)', 
+                    r'<a href="\1" target="_blank" style="color: #4da6ff; text-decoration: none;">\1</a>', 
+                    str(crosswalks_raw)
+                )
+            
+            html_table = (
+                f'<table style="width: 100%; border-collapse: separate; border-spacing: 0; border: none; font-size: 0.95em;">'
+                f'{table_row("Hierarchy Path", target_node.get("Hierarchy_Path"))}'
+                f'{table_row("CURIE", target_node.get("CURIE"))}'
+                f'{table_row("URI", target_node.get("URI"), is_link=True)}'
+                f'{table_row("Synonyms", target_node.get("Synonyms"))}'
+                f'{table_row("Description", target_node.get("Description"))}'
+                f'{table_row("Crosswalks", crosswalks_html)}' # Pass the pre-formatted HTML string here
+                f'{table_row("Concept Type", target_node.get("Concept_Type"))}'
+                f'</table>'
+            )
+            st.markdown(f"### Concept Details: {target_node['Primary_Label']}")
+            st.markdown(html_table, unsafe_allow_html=True)
+        else:
+            st.info("### Concept Details\n\nUse the selection box in the table below to view full concept details here.")
+
+    st.divider()
+
     st.write(f"Showing **{len(filtered_df):,}** concepts (out of {len(df):,}).")
-    st.caption("Tip: Hover over the top right corner of the table to download the data, search within results, or click the **eye icon** to show/hide additional columns.")
+    st.caption("Tip: Hover over the top right corner of the table to download the data, or click the **eye icon** to show/hide additional columns.")
     
-    # Updated default columns
+    # --- 4. Render the Interactive Table ---
     default_columns = ['CURIE', 'Primary_Label', 'working_category', 'Hierarchy_Path', 'URI', 'Source_System']
     col_config = {
         "URI": st.column_config.LinkColumn("URI", width="small"),
         "Primary_Label": st.column_config.TextColumn("Primary_Label", width="medium")
     }
-    st.dataframe(filtered_df, width="stretch", hide_index=True, column_order=default_columns, column_config=col_config)
 
+    st.dataframe(
+        filtered_df, 
+        key="concept_table", 
+        width="stretch", 
+        hide_index=True, 
+        column_order=default_columns, 
+        column_config=col_config,
+        on_select="rerun",           # This tells Streamlit to instantly rerun the page when clicked
+        selection_mode="single-row"  # Restricts the user to selecting one concept at a time
+    )
 
 def frequency_analyzer():
     st.header("Concept Frequency Analyzer")

@@ -1,5 +1,5 @@
 pandas
-streamlit>=1.32.0
+streamlit>=1.35.0
 streamlit-keyup
 nltk
 plotly
