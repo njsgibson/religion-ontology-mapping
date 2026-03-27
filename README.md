@@ -1,6 +1,6 @@
 # Religion Ontology Mapping Framework
 
-**Live web application:** [Religion Ontology Explorer](https://religion-ontology-explorer.streamlit.app/)
+**Live web application:** [Religion Ontology Explorer](https://religion-ontology.streamlit.app/)
 
 ## 1. Project Overview and Vision
 This repository provides a standardized environment for aggregating and mapping religion-related concepts (e.g., religious traditions, practices, beliefs) across major disciplinary ontologies. 
