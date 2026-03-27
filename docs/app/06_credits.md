@@ -11,7 +11,7 @@ Please cite the project's GitHub repository as the permanent home of the code an
 
 > Gibson, N. J. S. (2026). Religion Ontology Mapping Framework [Computer software]. GitHub. https://github.com/njsgibson/religion-ontology-mapping
 
-The live web application can be accessed at https://religion-ontology-explorer.streamlit.app/.
+The live web application can be accessed at https://religion-ontology.streamlit.app/.
 
 ### License and data sovereignty
 The code and framework for this project are distributed under the MIT License. 

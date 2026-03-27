@@ -23,13 +23,6 @@ st.markdown("""
             padding-top: 2rem !important;
             padding-bottom: 2rem !important;
         }
-        
-        /* 2. Gently emphasize ONLY the unclickable group headers (About, Reference, etc.) */
-        [data-testid="stSidebarNavSeparator"] + ul > li > div {
-             font-weight: 600 !important;
-             letter-spacing: 0.5px !important;
-             color: #e0e0e0 !important;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -181,8 +174,8 @@ def dataset_overview():
     html += '</tbody></table>'
     st.markdown(html, unsafe_allow_html=True)
 
-def concept_explorer():
-    st.header("Concept Explorer")
+def concept_search():
+    st.header("Concept Search")
     st.markdown("Search for specific terms across the aggregated dataset. Filter by source or conceptual category.")
     
     required_cols = ['working_category', 'Source_System', 'Primary_Label', 'Synonyms', 'Description', 'Formal_Label', 'URI']
@@ -236,8 +229,8 @@ def concept_explorer():
     st.dataframe(filtered_df, width="stretch", hide_index=True, column_order=default_columns, column_config=col_config)
 
 
-def concept_frequency():
-    st.header("Concept Frequency")
+def frequency_analyzer():
+    st.header("Concept Frequency Analyzer")
     st.markdown("This page allows you to explore the salience of concepts within and across source ontologies. All visualizations are bound to your choice of category.")
     st.markdown("<br>", unsafe_allow_html=True) 
 
@@ -252,12 +245,25 @@ def concept_frequency():
         st.markdown("### Parameters")
         selected_cat = st.selectbox("category", consensus_categories)
         selected_sources = st.multiselect("filter by source(s)", sources_list, placeholder="all sources (leave blank)")
-        top_n = st.slider("number of terms to display", min_value=10, max_value=50, value=20, step=5)
+        
+        extraction_method = st.selectbox("extraction method", [
+            "single words (unigrams)", 
+            "two words (bigrams)", 
+            "three words (trigrams)", 
+            "exact label (as is)"
+        ])
+        
+        top_n = st.slider("number of terms to display", min_value=10, max_value=100, value=20, step=5)
         st.markdown("<br>", unsafe_allow_html=True)
         count_method = st.radio("counting metric", ["total mentions", "sources with any mention"])
         st.markdown("<br>", unsafe_allow_html=True)
-        use_lemmatization = st.toggle("apply lemmatization", value=True)
-        use_custom_stops = st.toggle("filter domain stop words", value=True)
+        
+        remove_parens = st.toggle("exclude parenthetical text", value=True)
+        
+        # Disable NLP toggles if the user wants the exact label
+        nlp_disabled = (extraction_method == "exact label (as is)")
+        use_lemmatization = st.toggle("apply lemmatization", value=True, disabled=nlp_disabled)
+        use_custom_stops = st.toggle("filter domain stop words", value=True, disabled=nlp_disabled)
             
         domain_stops = {'concept', 'observable', 'entity', 'religion', 'religious', 'tradition', 'group', 'system', 'history'}
         cat_stops_dict = {
@@ -287,17 +293,57 @@ def concept_frequency():
             stop_words = set(stopwords.words('english')).union(custom_stops) if use_custom_stops else set(stopwords.words('english'))
 
             for row in consensus_df.itertuples():
-                text = str(row.Primary_Label).lower()
+                raw_text = str(row.Primary_Label).lower()
                 source = str(row.Source_System)
-                words = re.findall(r'\b[a-z]{3,}\b', text)
-                for w in words:
-                    if w not in stop_words:
-                        if use_lemmatization: w = lemmatizer.lemmatize(w)
-                        if w not in word_stats: word_stats[w] = {'count': 0, 'sources': set()}
-                        word_stats[w]['count'] += 1
-                        word_stats[w]['sources'].add(source)
+                
+                # 1. Handle parentheticals
+                if remove_parens:
+                    raw_text = re.sub(r'\([^)]*\)', '', raw_text)
+                
+                terms_to_count = []
+                
+                # 2. Extract Terms
+                if extraction_method == "exact label (as is)":
+                    cleaned_label = " ".join(raw_text.split())
+                    if cleaned_label:
+                        terms_to_count = [cleaned_label]
+                else:
+                    words = re.findall(r'\b[a-z]{3,}\b', raw_text)
+                    processed_words = []
+                    
+                    for w in words:
+                        if w not in stop_words:
+                            if use_lemmatization: 
+                                w = lemmatizer.lemmatize(w)
+                            processed_words.append(w)
+                    
+                    if extraction_method == "single words (unigrams)":
+                        terms_to_count = processed_words
+                    elif extraction_method == "two words (bigrams)":
+                        terms_to_count = [" ".join(ngram) for ngram in zip(processed_words, processed_words[1:])]
+                    elif extraction_method == "three words (trigrams)":
+                        terms_to_count = [" ".join(ngram) for ngram in zip(processed_words, processed_words[1:], processed_words[2:])]
 
-            plot_data = [{'Term': w, 'total mentions': stats['count'], 'sources with any mention': len(stats['sources']), 'Source List': ", ".join(sorted(list(stats['sources'])))} for w, stats in word_stats.items()]
+                # 3. Aggregate Counts Per Source
+                for term in terms_to_count:
+                    if term not in word_stats: 
+                        word_stats[term] = {}
+                    if source not in word_stats[term]:
+                        word_stats[term][source] = 0
+                    word_stats[term][source] += 1
+
+            plot_data = []
+            for term, sources in word_stats.items():
+                total_mentions = sum(sources.values())
+                sources_with_mention = len(sources)
+                source_list = ", ".join(sorted(list(sources.keys())))
+                plot_data.append({
+                    'Term': term, 
+                    'total mentions': total_mentions, 
+                    'sources with any mention': sources_with_mention, 
+                    'Source List': source_list
+                })
+                
             plot_df = pd.DataFrame(plot_data)
 
             if plot_df.empty:
@@ -313,14 +359,52 @@ def concept_frequency():
                     total_possible_sources = len(selected_sources) if selected_sources else len(sources_list)
                     x_axis_max = max(total_possible_sources, plot_df['sources with any mention'].max())
 
-                label_suffix = "(lemmatized)" if use_lemmatization else "(raw terms)"
-                st.markdown(
-                    f"### Top {top_n} terms in '{selected_cat}' {label_suffix}<br>"
-                    f"<span style='font-size: 0.85em; color: gray; font-weight: normal;'>"
-                    f"Analysis based on the Primary_Label of <b>{len(consensus_df):,}</b> concepts</span>",
-                    unsafe_allow_html=True
-                )
+                if nlp_disabled:
+                    label_suffix = "(exact labels)"
+                else:
+                    label_suffix = "(lemmatized)" if use_lemmatization else "(raw tokens)"
+                    
+                # 4. Render main title first so it aligns perfectly with the 'Parameters' header
+                st.markdown(f"### Top {top_n} terms in '{selected_cat}' {label_suffix}")
 
+                # 5. Create a single row layout for the Subtitle and Button
+                col_subtitle, col_download = st.columns([3, 1])
+                
+                with col_subtitle:
+                    # Added padding-top to visually center the text with the button's height
+                    st.markdown(
+                        f"<div style='padding-top: 10px; font-size: 0.85em; color: gray; font-weight: normal;'>"
+                        f"Analysis based on the Primary_Label of <b>{len(consensus_df):,}</b> concepts</div>",
+                        unsafe_allow_html=True
+                    )
+
+                with col_download:
+                    # Build the matrix for the top N terms
+                    top_terms = plot_df['Term'].tolist()
+                    matrix_data = {term: word_stats[term] for term in top_terms}
+                    download_df = pd.DataFrame.from_dict(matrix_data, orient='index').fillna(0).astype(int)
+                    download_df.index.name = 'Term'
+                    
+                    # Map full source names to their prefixes using the registry
+                    registry_df = load_csv_config("source_registry.csv")
+                    if 'Source_Name' in registry_df.columns and 'Prefix' in registry_df.columns:
+                        prefix_map = dict(zip(registry_df['Source_Name'], registry_df['Prefix']))
+                        download_df = download_df.rename(columns=prefix_map)
+                    
+                    download_df = download_df.reindex(sorted(download_df.columns), axis=1)
+                    
+                    csv = download_df.to_csv().encode('utf-8')
+                    
+                    # Button renders naturally at the top of the column, next to the subtitle
+                    st.download_button(
+                        label="Download chart data",
+                        data=csv,
+                        file_name=f'concept_frequency_{selected_cat}.csv',
+                        mime='text/csv',
+                        use_container_width=True
+                    )
+
+                # 6. Render Chart
                 dynamic_height = max(400, top_n * 25)
                 fig = px.bar(
                     plot_df, x=sort_col, y='Term', orientation='h', color=sort_col,
@@ -329,13 +413,14 @@ def concept_frequency():
                 fig.update_layout(
                     xaxis=dict(range=[0, x_axis_max], title=count_method),
                     yaxis=dict(dtick=1, title=None),
-                    coloraxis_showscale=False, height=dynamic_height, margin=dict(l=10, r=20, t=20, b=40)
+                    coloraxis_showscale=False, 
+                    height=dynamic_height, 
+                    margin=dict(l=10, r=20, t=0, b=40) 
                 )
                 st.plotly_chart(fig, theme="streamlit", width="stretch")
 
-
-def source_explorer():
-    st.header("Source Explorer")
+def source_browser():
+    st.header("Source Hierarchy Browser")
     st.markdown("Navigate ontological tree structures from the top down. Select a source and an entry category to find root nodes, then drill down into their descendants.")
     st.markdown("<br>", unsafe_allow_html=True) 
 
@@ -354,8 +439,23 @@ def source_explorer():
         cat_counts = source_df['working_category'].value_counts().to_dict()
         valid_cats = sorted([cat for cat in source_df['working_category'].unique() if pd.notna(cat) and cat != "non-religious"])
         if "non-religious" in source_df['working_category'].unique(): valid_cats.append("non-religious")
-        selected_cat = st.selectbox("Select Entry Category", valid_cats, format_func=lambda x: f"{x} ({cat_counts.get(x, 0):,} concepts)", label_visibility="collapsed")
-        cat_df = source_df[source_df['working_category'] == selected_cat].copy()
+        
+        # Insert "All Categories" at the top of the list
+        valid_cats.insert(0, "All Categories")
+        
+        selected_cat = st.selectbox(
+            "Select Entry Category", 
+            valid_cats, 
+            index=0, # Defaults to "All Categories"
+            format_func=lambda x: f"All Categories ({len(source_df):,} concepts)" if x == "All Categories" else f"{x} ({cat_counts.get(x, 0):,} concepts)", 
+            label_visibility="collapsed"
+        )
+        
+        # Apply the appropriate filter based on the selection
+        if selected_cat == "All Categories":
+            cat_df = source_df.copy()
+        else:
+            cat_df = source_df[source_df['working_category'] == selected_cat].copy()
 
     from collections import defaultdict
     import plotly.graph_objects as go
@@ -398,7 +498,12 @@ def source_explorer():
 
     with top_details:
         if root_nodes:
-            st.markdown(f"### Category overview: {selected_cat.capitalize()}")
+            # Dynamically set the title based on the category selection
+            if selected_cat == "All Categories":
+                st.markdown(f"### Source overview: {selected_source}")
+            else:
+                st.markdown(f"### Category overview: {selected_cat.capitalize()}")
+                
             cat_avail = len(root_nodes)
             cat_desc = len(set().union(*[descendants_map[nid] for nid in root_nodes]))
             cat_total = cat_avail + cat_desc
@@ -582,9 +687,9 @@ pages = {
     ],
     "Exploration Tools": [
         st.Page(dataset_overview, title="Dataset Overview"),
-        st.Page(concept_explorer, title="Concept Explorer"),
-        st.Page(concept_frequency, title="Concept Frequency"),
-        st.Page(source_explorer, title="Source Explorer")
+        st.Page(concept_search, title="Concept Search"),
+        st.Page(frequency_analyzer, title="Concept Frequency Analyzer"),
+        st.Page(source_browser, title="Source Hierarchy Browser")
     ],
     "Reference": [
         st.Page(data_sources, title="Data Sources"),
@@ -595,6 +700,16 @@ pages = {
 }
 
 pg = st.navigation(pages)
+
+# Inject an independent, floating HTML block pinned to the bottom left
+st.sidebar.markdown(
+    """
+    <div style="position: fixed; bottom: 20px; left: 20px; color: gray; font-size: 0.85em;">
+        Religion Ontology Explorer v0.9<br>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Run the selected page
 pg.run()
