@@ -377,3 +377,11 @@ Wikidata is a massive, crowdsourced, polyhierarchical knowledge graph published 
    * **`exception`**: Keeps the flagged node and all of its descendants (punches through a higher-level `floor` or `prune` rule).
    * **`keepnode`**: Keeps the flagged node, but drops its descendants (punches through a higher-level `floor` or `prune` rule).
 A final pruning script applies these rules by matching the exact `Hierarchy_Path` strings. If a concept is caught between conflicting rules, the engine dynamically resolves the conflict by favoring the deepest (most specific) rule in the branch, cleanly amputating noisy sub-trees while preserving domain-relevant exceptions.
+
+### World Religion Database (WRD)
+
+The World Religion Database provides international religious demographic data but does not publish its identity classification schema as a machine-readable ontology. To bridge this gap, all available religious identity categories were manually extracted into a flat CSV file.
+
+1. **Local bulk parsing (Strategy A):** The script loads the manual CSV extract, employing aggressive encoding fallbacks (e.g., `cp1252`) and unicode string replacements to repair corrupted characters (e.g., smart quotes, replacement glyphs) introduced during manual data entry.
+2. **Dynamic hierarchy resolution:** The script reverse-engineers the taxonomy in memory by mapping each row's text-based `Parent_Primary_Label` to previously processed parent nodes, dynamically constructing the `Hierarchy_Path`.
+3. **Identifier synthesis:** Because the source lacks native identifiers, the pipeline synthesizes sequential, hierarchical primary keys (e.g., roots are assigned `1`, `2`; children are assigned `1A`, `1B`) to establish stable CURIEs within the `WRD` namespace. The `URI` column is intentionally left blank.
