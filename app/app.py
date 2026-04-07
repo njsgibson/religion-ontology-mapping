@@ -770,6 +770,7 @@ st.sidebar.markdown(
     """
     <div style="position: fixed; bottom: 20px; left: 20px; color: gray; font-size: 0.85em;">
         Religion Ontology Explorer v0.9<br>
+        <a href="https://github.com/njsgibson/religion-ontology-mapping" target="_blank" style="color: #4da6ff; text-decoration: none;">GitHub repository</a>
     </div>
     """,
     unsafe_allow_html=True

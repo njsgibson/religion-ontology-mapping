@@ -3,7 +3,7 @@ This framework is being developed as part of an interdisciplinary effort to prom
 
 ### Credits
 
-* **Principal developer**: [Nicholas J. S. Gibson](https://www.linkedin.com/in/nicholas-j-s-gibson/), ResearchWell LLC
+* **Developer**: [Nicholas J. S. Gibson](https://www.linkedin.com/in/nicholas-j-s-gibson/), ResearchWell LLC
 * **Technical stack**: Python, Pandas, Streamlit, and Gemini LLM
 
 ### Citation
