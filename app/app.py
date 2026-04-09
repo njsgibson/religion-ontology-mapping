@@ -589,13 +589,12 @@ def source_browser():
                 # --- Top Chart Controls ---
                 col_chart_type, col_color = st.columns(2)
                 with col_chart_type:
-                    chart_type = st.radio("select chart type:", ["icicle", "sunburst", "treemap"], horizontal=True, key="top_chart")
+                    chart_type = st.radio("select chart type:", ["Icicle", "Sunburst", "Treemap"], horizontal=True, key="top_chart")
                 with col_color:
                     color_theme = st.selectbox("select color theme:", list(color_map.keys()), key="top_color")
                 
                 selected_colorway = color_map[color_theme]
                 
-                # Auto-generate chart (no button)
                 ids, labels, parents = ["CAT_ROOT"], [f"{selected_cat.capitalize()}" if selected_cat != "All Categories" else "All Categories"], [""]
                 def build_cat_sunburst_data(current_id, parent_path, current_depth):
                     if current_depth > 5 or len(ids) > 2500: return
@@ -609,9 +608,9 @@ def source_browser():
                 
                 for rn in root_nodes: build_cat_sunburst_data(rn, "CAT_ROOT", 1)
                 
-                if "Sunburst" in chart_type:
+                if chart_type == "Sunburst":
                     fig = go.Figure(go.Sunburst(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
-                elif "Treemap" in chart_type:
+                elif chart_type == "Treemap":
                     fig = go.Figure(go.Treemap(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
                 else:
                     fig = go.Figure(go.Icicle(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
@@ -718,13 +717,12 @@ def source_browser():
                         # --- Bottom Chart Controls ---
                         bot_col_chart, bot_col_color = st.columns(2)
                         with bot_col_chart:
-                            bot_chart_type = st.radio("select chart type:", ["icicle", "sunburst", "treemap"], horizontal=True, key="bot_chart")
+                            bot_chart_type = st.radio("select chart type:", ["Icicle", "Sunburst", "Treemap"], horizontal=True, key="bot_chart")
                         with bot_col_color:
                             bot_color_theme = st.selectbox("select color theme:", list(color_map.keys()), key="bot_color")
                         
                         selected_bot_colorway = color_map[bot_color_theme]
                         
-                        # Auto-generate chart (no button)
                         ids, labels, parents = [], [], []
                         def build_node_sunburst_data(current_id, parent_path, current_depth):
                             if current_depth > 6 or len(ids) > 1500: return
@@ -738,9 +736,9 @@ def source_browser():
                         
                         build_node_sunburst_data(target_nid, "", 0)
                         
-                        if "Sunburst" in bot_chart_type:
+                        if bot_chart_type == "Sunburst":
                             fig = go.Figure(go.Sunburst(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
-                        elif "Treemap" in bot_chart_type:
+                        elif bot_chart_type == "Treemap":
                             fig = go.Figure(go.Treemap(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
                         else:
                             fig = go.Figure(go.Icicle(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
