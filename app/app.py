@@ -523,6 +523,8 @@ def source_browser():
 
     from collections import defaultdict
     import plotly.graph_objects as go
+    import plotly.express as px
+    import re
     
     node_dict = {}
     curie_to_id = {}
@@ -560,6 +562,14 @@ def source_browser():
 
     for cid in node_dict.keys(): get_descendants(cid)
 
+    # Dictionary for the 4 simplified, distinct color palettes
+    color_map = {
+        "Alphabet (26 colors)": px.colors.qualitative.Alphabet,
+        "Pastel (11 colors)": px.colors.qualitative.Pastel,
+        "Plotly Default (10 colors)": px.colors.qualitative.Plotly,
+        "Safe (colorblind friendly; 11 colors)": px.colors.qualitative.Safe
+    }
+
     with top_details:
         if root_nodes:
             # Dynamically set the title based on the category selection
@@ -573,23 +583,41 @@ def source_browser():
             cat_total = cat_avail + cat_desc
             cat_desc_str = "1 concept" if cat_total == 1 else f"{cat_total:,} concepts"
             
-            with st.expander(f"Visual summary: expand to view all {cat_desc_str} in a sunburst chart"):
-                if cat_total > 1500: st.warning(f"This category contains {cat_total:,} concepts. Plotting extremely dense trees may cause performance issues.")
-                if st.button("Generate Category Sunburst Graphic"):
-                    ids, labels, parents = ["CAT_ROOT"], [f"{selected_cat.capitalize()}"], [""]
-                    def build_cat_sunburst_data(current_id, parent_path, current_depth):
-                        if current_depth > 5 or len(ids) > 2500: return
-                        row = node_dict[current_id]
-                        label = str(row['Primary_Label'])
-                        if len(label) > 25: label = label[:22] + "..."
-                        path_id = f"{parent_path}|{current_id}"
-                        ids.append(path_id); labels.append(label); parents.append(parent_path)
-                        for child_id in children_map[current_id]:
-                            build_cat_sunburst_data(child_id, path_id, current_depth + 1)
-                    for rn in root_nodes: build_cat_sunburst_data(rn, "CAT_ROOT", 1)
+            with st.expander(f"Visual summary: expand to view {cat_desc_str} in an interactive chart"):
+                if cat_total > 1500: st.warning(f"This view contains {cat_total:,} concepts. Plotting extremely dense trees may cause performance issues.")
+                
+                # --- Top Chart Controls ---
+                col_chart_type, col_color = st.columns(2)
+                with col_chart_type:
+                    chart_type = st.radio("select chart type:", ["icicle", "sunburst", "treemap"], horizontal=True, key="top_chart")
+                with col_color:
+                    color_theme = st.selectbox("select color theme:", list(color_map.keys()), key="top_color")
+                
+                selected_colorway = color_map[color_theme]
+                
+                # Auto-generate chart (no button)
+                ids, labels, parents = ["CAT_ROOT"], [f"{selected_cat.capitalize()}" if selected_cat != "All Categories" else "All Categories"], [""]
+                def build_cat_sunburst_data(current_id, parent_path, current_depth):
+                    if current_depth > 5 or len(ids) > 2500: return
+                    row = node_dict[current_id]
+                    label = str(row['Primary_Label'])
+                    if len(label) > 25: label = label[:22] + "..."
+                    path_id = f"{parent_path}|{current_id}"
+                    ids.append(path_id); labels.append(label); parents.append(parent_path)
+                    for child_id in children_map[current_id]:
+                        build_cat_sunburst_data(child_id, path_id, current_depth + 1)
+                
+                for rn in root_nodes: build_cat_sunburst_data(rn, "CAT_ROOT", 1)
+                
+                if "Sunburst" in chart_type:
                     fig = go.Figure(go.Sunburst(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
-                    fig.update_layout(margin=dict(t=10, l=10, r=10, b=10), height=700, colorway=px.colors.qualitative.Pastel)
-                    st.plotly_chart(fig, width="stretch", theme="streamlit")
+                elif "Treemap" in chart_type:
+                    fig = go.Figure(go.Treemap(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
+                else:
+                    fig = go.Figure(go.Icicle(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
+                    
+                fig.update_layout(margin=dict(t=40, l=10, r=10, b=10), height=700, colorway=selected_colorway)
+                st.plotly_chart(fig, width="stretch", theme="streamlit")
         else:
             st.info(f"No concepts found for '{selected_cat}' in '{selected_source}'.")
 
@@ -649,6 +677,17 @@ def source_browser():
             if selected_nodes:
                 target_node = selected_nodes[-1] 
                 st.markdown(f"### Concept: {target_node['Primary_Label']}")
+                
+                # Regex logic to make Crosswalk URLs clickable
+                crosswalks_raw = target_node.get("Crosswalks")
+                crosswalks_html = "N/A"
+                if pd.notna(crosswalks_raw) and str(crosswalks_raw).strip() != "":
+                    crosswalks_html = re.sub(
+                        r'(https?://[^\s|<>"]+)', 
+                        r'<a href="\1" target="_blank" style="color: #4da6ff; text-decoration: none;">\1</a>', 
+                        str(crosswalks_raw)
+                    )
+
                 def table_row(label, value, is_link=False):
                     val_str = str(value) if pd.notna(value) and str(value).strip() != "" else "N/A"
                     if is_link and val_str != "N/A": val_str = f'<a href="{val_str}" target="_blank" style="color: #4da6ff; text-decoration: none;">{val_str}</a>'
@@ -661,7 +700,7 @@ def source_browser():
                     f'{table_row("URI", target_node.get("URI"), is_link=True)}'
                     f'{table_row("Synonyms", target_node.get("Synonyms"))}'
                     f'{table_row("Description", target_node.get("Description"))}'
-                    f'{table_row("Crosswalks", target_node.get("Crosswalks"))}'
+                    f'{table_row("Crosswalks", crosswalks_html)}' # Using formatted HTML
                     f'{table_row("Concept Type", target_node.get("Concept_Type"))}'
                     f'</table>'
                 )
@@ -672,23 +711,42 @@ def source_browser():
                 if d_count > 0:
                     st.markdown("<br>", unsafe_allow_html=True)
                     expander_desc_str = "1 descendant" if d_count == 1 else f"{d_count:,} descendants"
-                    with st.expander(f"Visual summary: expand to view {expander_desc_str} in a concept sunburst chart"):
+                    
+                    with st.expander(f"Visual summary: expand to view {expander_desc_str} in an interactive chart"):
                         if d_count > 800: st.warning(f"This node has {d_count:,} descendants. Plotting extremely dense trees may cause performance issues.")
-                        if st.button("Generate Node Sunburst Graphic"):
-                            ids, labels, parents = [], [], []
-                            def build_node_sunburst_data(current_id, parent_path, current_depth):
-                                if current_depth > 6 or len(ids) > 1500: return
-                                row = node_dict[current_id]
-                                label = str(row['Primary_Label'])
-                                if len(label) > 25: label = label[:22] + "..."
-                                path_id = f"{parent_path}|{current_id}" if parent_path else current_id
-                                ids.append(path_id); labels.append(label); parents.append(parent_path)
-                                for child_id in children_map[current_id]:
-                                    build_node_sunburst_data(child_id, path_id, current_depth + 1)
-                            build_node_sunburst_data(target_nid, "", 0)
+                        
+                        # --- Bottom Chart Controls ---
+                        bot_col_chart, bot_col_color = st.columns(2)
+                        with bot_col_chart:
+                            bot_chart_type = st.radio("select chart type:", ["icicle", "sunburst", "treemap"], horizontal=True, key="bot_chart")
+                        with bot_col_color:
+                            bot_color_theme = st.selectbox("select color theme:", list(color_map.keys()), key="bot_color")
+                        
+                        selected_bot_colorway = color_map[bot_color_theme]
+                        
+                        # Auto-generate chart (no button)
+                        ids, labels, parents = [], [], []
+                        def build_node_sunburst_data(current_id, parent_path, current_depth):
+                            if current_depth > 6 or len(ids) > 1500: return
+                            row = node_dict[current_id]
+                            label = str(row['Primary_Label'])
+                            if len(label) > 25: label = label[:22] + "..."
+                            path_id = f"{parent_path}|{current_id}" if parent_path else current_id
+                            ids.append(path_id); labels.append(label); parents.append(parent_path)
+                            for child_id in children_map[current_id]:
+                                build_node_sunburst_data(child_id, path_id, current_depth + 1)
+                        
+                        build_node_sunburst_data(target_nid, "", 0)
+                        
+                        if "Sunburst" in bot_chart_type:
                             fig = go.Figure(go.Sunburst(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
-                            fig.update_layout(margin=dict(t=10, l=10, r=10, b=10), height=600, colorway=px.colors.qualitative.Pastel)
-                            st.plotly_chart(fig, width="stretch", theme="streamlit")
+                        elif "Treemap" in bot_chart_type:
+                            fig = go.Figure(go.Treemap(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
+                        else:
+                            fig = go.Figure(go.Icicle(ids=ids, labels=labels, parents=parents, hoverinfo="label"))
+                            
+                        fig.update_layout(margin=dict(t=40, l=10, r=10, b=10), height=600, colorway=selected_bot_colorway) 
+                        st.plotly_chart(fig, width="stretch", theme="streamlit")
             else:
                 st.info("Select a concept from the navigation panel to view its full details.")
 

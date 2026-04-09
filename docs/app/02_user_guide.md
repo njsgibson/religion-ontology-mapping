@@ -31,11 +31,11 @@ While some ontologies are flat catalogs of concepts, others contain hundreds of 
 * If you constrain the view by selecting a specific category (e.g., "beliefs" or "buildings"), the tool filters out any parent-child relationships where one of the nodes falls outside your target. This prevents "beliefs" from accidentally showing up when you are trying to explore "occupations" (even though some ontologies, e.g., AAT, sometimes nest "belief"-like concepts as children of "occupation"-like concepts).
 * If you are filtering by category and a concept's true parent is excluded by that boundary, the tool automatically promotes that orphaned concept to act as a root node for your current view, ensuring that no data are hidden.
 * Before the user interface renders, a recursive algorithm traces every branch to the bottom of the tree, calculating the exact number of unique descendants for every single node. This allows you to inspect how large a branch is before you click it.
-* The visual summaries use Plotly to render sunburst charts. To prevent polyhierarchy from breaking the visualization, the tool relies on the unique `hierarchy_path` previously determined during data ingestion.
+* The visual summaries use Plotly to render interactive hierarchical charts. To prevent polyhierarchy from breaking the visualization, the tool relies on the unique `hierarchy_path` previously determined during data ingestion.
 
 **How to use it:**
 
 * Start by selecting a **Source Ontology**. The tool will default to **All Categories**, generating a high-level source overview and populating a list of its absolute root nodes. You can use the **Category** dropdown to narrow this view to a specific subset.
-* Expand the **Visual summary** to view the entire source or category tree as a multi-level pie chart ("sunburst chart"). 
+* Expand the **Visual summary** to view the entire source or category tree. You can toggle between three **chart types** (a circular Sunburst, a nested Treemap, or a taxonomical Icicle chart) and adjust the **color theme** to best fit the data density (e.g., using the 26-color "Alphabet" palette for highly branched trees, or "Safe" for colorblind-friendly viewing). 
 * Use the **Lineage Navigation** dropdowns to drill down into the hierarchy. Selecting a concept reveals a new dropdown if it has any children.
-* As you navigate, the right panel updates to show the full metadata for your selected concept, alongside an option to generate a targeted sunburst chart specifically for that node's descendants.
+* As you navigate, the right panel updates to show metadata for your selected concept, alongside an option to expand a targeted, interactive hierarchical chart specifically for that node's descendants.
