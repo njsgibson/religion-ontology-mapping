@@ -600,7 +600,7 @@ def source_browser():
                     if current_depth > 5 or len(ids) > 2500: return
                     row = node_dict[current_id]
                     label = str(row['Primary_Label'])
-                    if len(label) > 50: label = label[:47] + "..."
+                    if len(label) > 75: label = label[:72] + "..."
                     path_id = f"{parent_path}|{current_id}"
                     ids.append(path_id); labels.append(label); parents.append(parent_path)
                     for child_id in children_map[current_id]:
@@ -728,7 +728,7 @@ def source_browser():
                             if current_depth > 6 or len(ids) > 1500: return
                             row = node_dict[current_id]
                             label = str(row['Primary_Label'])
-                            if len(label) > 50: label = label[:47] + "..."
+                            if len(label) > 75: label = label[:72] + "..."
                             path_id = f"{parent_path}|{current_id}" if parent_path else current_id
                             ids.append(path_id); labels.append(label); parents.append(parent_path)
                             for child_id in children_map[current_id]:
